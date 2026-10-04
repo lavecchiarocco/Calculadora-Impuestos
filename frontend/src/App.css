@@ -61,12 +61,15 @@
 .progress-bar {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 1.5rem;
+  width: 100%;
   max-width: 80rem;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0 auto;
   overflow-x: auto;
-  padding-bottom: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border-top: 1px solid var(--color-surface-200);
+  justify-content: center;
 }
 
 .progress-step {
@@ -74,13 +77,13 @@
   flex-direction: column;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 1rem;
   background: transparent;
   border: none;
   cursor: pointer;
   position: relative;
-  min-width: 80px;
   transition: color 150ms;
+  flex-shrink: 0;
 }
 
 .progress-step:disabled {
@@ -137,19 +140,7 @@
   font-weight: 500;
 }
 
-.step-connector {
-  position: absolute;
-  top: 15px;
-  right: -50%;
-  width: 100%;
-  height: 2px;
-  background: var(--color-surface-200);
-  z-index: -1;
-}
 
-.step-connector.completed {
-  background: var(--color-success-500);
-}
 
 .app-grid {
   display: grid;
@@ -1312,8 +1303,8 @@
 
 .acordeon-header-line-3 {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  gap: 2rem;
   margin-top: 0.75rem;
   padding-top: 0.75rem;
   border-top: 1px solid var(--color-surface-200);
@@ -1321,7 +1312,8 @@
 
 @media (max-width: 480px) {
   .acordeon-header-line-3 {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    gap: 1rem;
   }
 }
 
@@ -1336,14 +1328,20 @@
   font-size: var(--text-caption);
   color: var(--color-surface-500);
   margin-bottom: 0.125rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .acordeon-header-stat > span:last-child {
   font-family: var(--font-family-mono);
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+  font-size: var(--text-sm);
   color: var(--color-surface-900);
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
 }
 
 /* Advertencias en contenido expandido */

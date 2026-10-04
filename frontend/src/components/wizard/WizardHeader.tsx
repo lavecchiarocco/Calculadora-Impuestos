@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import type { UseWizardReturn } from '@/hooks/useWizard';
 
 type WizardState = Pick<UseWizardReturn, 'currentStep' | 'completedSteps'>;
@@ -40,7 +40,7 @@ export function WizardHeader({
       </div>
 
       <div className="progress-bar" role="progressbar" aria-valuenow={currentStep} aria-valuemin={1} aria-valuemax={4}>
-        {steps.map((step, idx) => {
+        {steps.map((step, _idx) => {
           const isCompleted = completedSteps.has(step.num);
           const isCurrent = step.num === currentStep;
           const isFuture = step.num > currentStep;
@@ -61,9 +61,7 @@ export function WizardHeader({
                 {!isCompleted && step.num}
               </span>
               <span className="step-label">{step.name}</span>
-              {idx < steps.length - 1 && (
-                <span className={`step-connector ${isCompleted ? 'completed' : ''}`} />
-              )}
+              
             </button>
           );
         })}
