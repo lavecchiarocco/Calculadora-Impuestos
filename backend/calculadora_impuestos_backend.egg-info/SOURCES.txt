@@ -1,0 +1,14 @@
+pyproject.toml
+app/__init__.py
+app/config/__init__.py
+app/config/loader.py
+app/engine/__init__.py
+app/engine/calculadora.py
+app/schemas/__init__.py
+app/schemas/calculadora.py
+calculadora_impuestos_backend.egg-info/PKG-INFO
+calculadora_impuestos_backend.egg-info/SOURCES.txt
+calculadora_impuestos_backend.egg-info/dependency_links.txt
+calculadora_impuestos_backend.egg-info/requires.txt
+calculadora_impuestos_backend.egg-info/top_level.txt
+tests/test_calculadora.py

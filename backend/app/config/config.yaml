@@ -1,0 +1,129 @@
+vigencia_desde: '2026-01-01'
+tipo_cambio:
+  valor_defecto: 1000.0
+  etiqueta: ARS/USD
+  a_confirmar: true
+peso_volumetrico:
+  divisor_aereo: 5000
+  a_confirmar: true
+topes:
+  pequenos_envios:
+    franquicia_usd: 400.0
+    limite_fob_usd: 3000.0
+    limite_peso_kg_por_bulto: 50.0
+    max_unidades_misma_especie: 3
+    max_envios_por_anio: 5
+    a_confirmar: true
+  courier_comercial:
+    limite_fob_usd: 3000.0
+    limite_peso_kg_por_bulto: 50.0
+    a_confirmar: true
+  regimen_general:
+    sin_limite_valor: true
+    sin_limite_peso: true
+    a_confirmar: false
+aliquotas:
+  derecho_importacion:
+    minimo: 0.0
+    maximo: 0.35
+    valor_aplicado: 0.35
+    etiqueta: Derecho de importación
+    a_confirmar: true
+  tasa_estadistica:
+    minimo: 0.03
+    maximo: 0.03
+    valor_aplicado: 0.03
+    etiqueta: Tasa de estadística
+    a_confirmar: false
+  iva:
+    minimo: 0.105
+    maximo: 0.21
+    valor_aplicado: 0.21
+    etiqueta: IVA
+    a_confirmar: true
+  impuestos_internos:
+    minimo: 0.0
+    maximo: 0.0
+    valor_aplicado: 0.0
+    etiqueta: Impuestos internos
+    a_confirmar: false
+  percepcion_iva:
+    minimo: 0.1
+    maximo: 0.2
+    valor_aplicado: 0.2
+    etiqueta: Percepción IVA
+    a_confirmar: true
+  percepcion_ganancias:
+    minimo: 0.06
+    maximo: 0.11
+    valor_aplicado: 0.11
+    etiqueta: Percepción Ganancias
+    a_confirmar: true
+  percepcion_iibb:
+    minimo: 0.015
+    maximo: 0.025
+    valor_aplicado: 0.025
+    etiqueta: Percepción IIBB
+    a_confirmar: true
+regimenes:
+  pequenos_envios:
+    nombre: Simplificado - Pequeños envíos (Courier personal / Correo Argentino)
+    derecho_importacion_sobre_excedente: true
+    tasa_estadistica_sobre_excedente: true
+    iva_sobre_valor_total: true
+    incluir_flete_seguro_base_iva: true
+    franquicia_activa_si_envios_menor_5: true
+    a_confirmar: true
+    advertencias:
+    - NO es válido si el producto es para reventa
+    - 'Incluir flete y seguro en base IVA: a confirmar'
+    - Ya no existe arancel único 50% Correo Argentino ni Impuesto PAÍS
+  courier_comercial:
+    nombre: Simplificado - Courier comercial (DIS)
+    derecho_importacion_porcentaje_fijo: 0.2
+    tasa_estadistica_porcentaje: 0.03
+    iva_sobre_cif_mas_derecho_tasa: true
+    sin_percepciones: true
+    sin_franquicia: true
+    a_confirmar: true
+    advertencias:
+    - Este subrégimen es exclusivo para personas jurídicas (advertencia, no bloquea)
+    - 'Marcar perfil como ''a confirmar vigencia con un courier'': fuentes no coinciden
+      en % derecho (20% fijo vs 0-35% por NCM)'
+  regimen_general:
+    nombre: Régimen General (Importación definitiva)
+    derecho_importacion_por_ncm: true
+    tasa_estadistica_porcentaje: 0.03
+    iva_sobre_cif_mas_derecho_tasa: true
+    percepciones_opcionales: true
+    requiere_despachante: true
+    requiere_inscripcion_importador: true
+    a_confirmar: false
+    advertencias:
+    - Requiere despachante de aduana e inscripción como importador
+    - 'Criterio conservador: no se modela suspensión transitoria de percepciones (vencía
+      30/06/2026)'
+ncm_ejemplos:
+- ncm: 8471.30.00
+  descripcion: Portátiles (laptops)
+  derecho_importacion: 0.0
+  iva: 0.105
+- ncm: 8517.12.00
+  descripcion: Teléfonos móviles
+  derecho_importacion: 0.0
+  iva: 0.21
+- ncm: 9503.00.00
+  descripcion: Juguetes
+  derecho_importacion: 0.35
+  iva: 0.21
+- ncm: 6109.10.00
+  descripcion: Camisetas de algodón
+  derecho_importacion: 0.35
+  iva: 0.21
+- ncm: 8471.41.00
+  descripcion: Servidores
+  derecho_importacion: 0.0
+  iva: 0.105
+redondeo:
+  decimales: 2
+  modo: ROUND_HALF_UP
