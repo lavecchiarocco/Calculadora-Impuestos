@@ -2,7 +2,7 @@ import pytest
 from decimal import Decimal
 
 from app.engine.calculadora import calcular_todos_regimenes
-from app.schemas.calculadora import DatosEntrada, Bulto, ModoTransporte
+from app.schemas.calculadora import DatosEntrada
 from app.config.loader import load_config, reload_config
 
 
@@ -20,16 +20,13 @@ def crear_datos_base(**kwargs) -> DatosEntrada:
         "precio_producto_usd": Decimal("1000"),
         "costo_envio_usd": Decimal("200"),
         "seguro_usd": Decimal("0"),
-        "modo_transporte": ModoTransporte.AEREO,
-        "bultos": [Bulto(largo_cm=Decimal("50"), ancho_cm=Decimal("40"), alto_cm=Decimal("30"), peso_kg=Decimal("10"))],
-        "cantidad_unidades": 1,
-        "derecho_importacion_pct": None,
-        "ncm": None,
+        "cantidad_productos": 1,
         "impuestos_internos_pct": Decimal("0"),
         "tipo_cambio_ars_usd": Decimal("1000"),
         "envio_incluye_impuestos_ddp": False,
         "requiere_organismo_externo": False,
         "incluir_percepciones": False,
+        "algun_bulto_supera_50kg": False,
         "envios_usados_este_anio": 0,
     }
     defaults.update(kwargs)
@@ -40,7 +37,7 @@ class TestCourierComercial:
     """Tests para Courier Comercial (DIS)"""
 
     def test_courier_comercial_basico(self):
-        """Producto USD 1.000 + envío USD 200 → CIF 1.200; derecho 240; tasa 36; IVA 309,96; total 585,96"""
+        """Producto USD 1.000 + envío USD 200 → CIF 1.200, derecho 240, tasa 36, IVA 309,96, total 585,96"""
         datos = crear_datos_base(
             precio_producto_usd=Decimal("1000"),
             costo_envio_usd=Decimal("200"),
@@ -166,6 +163,35 @@ class TestPequeñosEnvios:
 
 class TestRegimenGeneral:
     """Tests para Régimen General"""
+
+    def test_regimen_general_y_courier_cif_1025(self):
+        """El régimen general usa el derecho NCM y DIS conserva su tarifa fija."""
+        datos = crear_datos_base(
+            precio_producto_usd=Decimal("1025"),
+            costo_envio_usd=Decimal("0"),
+            ncm="9503.00.00",
+        )
+        resultado = calcular_todos_regimenes(datos)
+
+        general = next(r for r in resultado.regímenes if r.regimen_id == "regimen_general")
+        courier = next(r for r in resultado.regímenes if r.regimen_id == "courier_comercial")
+
+        assert general.escenario_conservador.total_impuestos_usd == Decimal("686.55")
+        assert courier.escenario_conservador.total_impuestos_usd == Decimal("500.51")
+
+    def test_derecho_manual_cero_sigue_siendo_un_override_valido(self):
+        """Un cero ingresado explícitamente no debe confundirse con un campo vacío."""
+        datos = crear_datos_base(
+            precio_producto_usd=Decimal("1025"),
+            costo_envio_usd=Decimal("0"),
+            ncm="9503.00.00",
+            derecho_importacion_pct=Decimal("0"),
+        )
+        resultado = calcular_todos_regimenes(datos)
+
+        general = next(r for r in resultado.regímenes if r.regimen_id == "regimen_general")
+
+        assert general.escenario_conservador.total_impuestos_usd == Decimal("252.46")
 
     def test_regimen_general_sin_percepciones(self):
         """Régimen general sin percepciones"""
@@ -299,53 +325,32 @@ class TestDDP:
         assert "ya incluye impuestos" in resultado.advertencias_globales[0]
 
 
-class TestPesoVolumetrico:
-    """Tests para cálculo de peso volumétrico"""
-
-    def test_peso_volumetrico_mayor_que_real(self):
-        """Peso volumétrico mayor que real → se usa volumétrico"""
-        datos = crear_datos_base(
-            precio_producto_usd=Decimal("1000"),
-            costo_envio_usd=Decimal("200"),
-            bultos=[
-                Bulto(largo_cm=Decimal("100"), ancho_cm=Decimal("100"), alto_cm=Decimal("100"), peso_kg=Decimal("10"))
-            ],  # Vol = 1,000,000 cm³ / 5000 = 200 kg volumétrico vs 10 kg real
-        )
-        resultado = calcular_todos_regimenes(datos)
-
-        assert resultado.peso_volumetrico_kg == Decimal("200")
-        assert resultado.peso_facturable_kg == Decimal("200")
-        assert resultado.usd_por_kg_flete == Decimal("1.0000")  # 200 USD / 200 kg
-
-    def test_peso_volumetrico_menor_que_real(self):
-        """Peso volumétrico menor que real → se usa real"""
-        datos = crear_datos_base(
-            precio_producto_usd=Decimal("1000"),
-            costo_envio_usd=Decimal("200"),
-            bultos=[
-                Bulto(largo_cm=Decimal("30"), ancho_cm=Decimal("20"), alto_cm=Decimal("10"), peso_kg=Decimal("50"))
-            ],  # Vol = 6,000 cm³ / 5000 = 1.2 kg volumétrico vs 50 kg real
-        )
-        resultado = calcular_todos_regimenes(datos)
-
-        assert resultado.peso_volumetrico_kg == Decimal("1.2")
-        assert resultado.peso_facturable_kg == Decimal("50")
-
-
 class TestAdvertenciasElegibilidad:
     """Tests para advertencias de elegibilidad"""
 
-    def test_mas_de_50kg_por_bulto_pequenos_envios(self):
-        """Más de 50 kg por bulto → no elegible en pequeños envíos"""
+    def test_algun_bulto_supera_50kg_pequenos_envios(self):
+        """Algún bulto supera 50 kg → no elegible en pequeños envíos"""
         datos = crear_datos_base(
             precio_producto_usd=Decimal("500"),
-            bultos=[Bulto(largo_cm=Decimal("50"), ancho_cm=Decimal("40"), alto_cm=Decimal("30"), peso_kg=Decimal("60"))],
+            algun_bulto_supera_50kg=True,
         )
         resultado = calcular_todos_regimenes(datos)
 
         pequenos = next(r for r in resultado.regímenes if r.regimen_id == "pequenos_envios")
         assert pequenos.elegibilidad.elegible is False
-        assert any("50" in m for m in pequenos.elegibilidad.motivos)
+        assert any("50 kg" in m for m in pequenos.elegibilidad.motivos)
+
+    def test_algun_bulto_supera_50kg_courier_comercial(self):
+        """Algún bulto supera 50 kg → no elegible en courier comercial"""
+        datos = crear_datos_base(
+            precio_producto_usd=Decimal("500"),
+            algun_bulto_supera_50kg=True,
+        )
+        resultado = calcular_todos_regimenes(datos)
+
+        courier = next(r for r in resultado.regímenes if r.regimen_id == "courier_comercial")
+        assert courier.elegibilidad.elegible is False
+        assert any("50 kg" in m for m in courier.elegibilidad.motivos)
 
     def test_mas_de_3000_usd_pequenos_envios(self):
         """Más de USD 3000 FOB → no elegible en pequeños envíos"""
@@ -360,16 +365,16 @@ class TestAdvertenciasElegibilidad:
         assert any("3000" in m for m in pequenos.elegibilidad.motivos)
 
     def test_mas_de_3_unidades_misma_especie(self):
-        """Más de 3 unidades de la misma especie → no elegible en pequeños envíos"""
+        """Más de 3 productos de la misma especie → no elegible en pequeños envíos"""
         datos = crear_datos_base(
             precio_producto_usd=Decimal("500"),
-            cantidad_unidades=5,
+            cantidad_productos=5,
         )
         resultado = calcular_todos_regimenes(datos)
 
         pequenos = next(r for r in resultado.regímenes if r.regimen_id == "pequenos_envios")
         assert pequenos.elegibilidad.elegible is False
-        assert any("3 unidades" in m or "misma especie" in m for m in pequenos.elegibilidad.motivos)
+        assert any("misma especie" in m for m in pequenos.elegibilidad.motivos)
 
     def test_organismo_externo_pequenos_envios(self):
         """Requiere organismo externo → no elegible en pequeños envíos"""
@@ -394,27 +399,6 @@ class TestAdvertenciasElegibilidad:
         courier = next(r for r in resultado.regímenes if r.regimen_id == "courier_comercial")
         assert courier.elegibilidad.elegible is False
         assert any("organismo externo" in m.lower() for m in courier.elegibilidad.motivos)
-
-
-class TestMaritimo:
-    """Tests para modo marítimo"""
-
-    def test_maritimo_volumen_m3(self):
-        """Marítimo debe calcular volumen en m³"""
-        datos = crear_datos_base(
-            precio_producto_usd=Decimal("1000"),
-            costo_envio_usd=Decimal("200"),
-            modo_transporte=ModoTransporte.MARITIMO,
-            bultos=[
-                Bulto(largo_cm=Decimal("100"), ancho_cm=Decimal("100"), alto_cm=Decimal("100"), peso_kg=Decimal("500"))
-            ],
-        )
-        resultado = calcular_todos_regimenes(datos)
-
-        # 100*100*100 = 1,000,000 cm³ = 1 m³
-        assert resultado.volumen_m3 == Decimal("1.0000")
-        assert resultado.peso_volumetrico_kg is None  # No aplica en marítimo
-        assert resultado.usd_por_kg_flete is None  # No aplica en marítimo
 
 
 if __name__ == "__main__":

@@ -129,7 +129,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             id={inputId}
             name={name}
             type={type}
-            className={clsx('field-input', showUnit && 'pr-12', errorMessage && 'field-input-error', className)}
+            className={clsx(
+              'field-input focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow',
+              showUnit && 'pr-12',
+              errorMessage && 'field-input-error',
+              className,
+            )}
             aria-describedby={describedBy}
             aria-invalid={!!errorMessage}
             {...props}

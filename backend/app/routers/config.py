@@ -13,7 +13,6 @@ def convert_config(config: LoaderAppConfig) -> AppConfigResponse:
     return AppConfigResponse(
         vigencia_desde=config.vigencia_desde,
         tipo_cambio=config.tipo_cambio.model_dump(),
-        peso_volumetrico=config.peso_volumetrico.model_dump(),
         topes=config.topes.model_dump(),
         aliquotas={k: v.model_dump() for k, v in config.aliquotas.items()},
         regimenes=config.regimenes.model_dump(),

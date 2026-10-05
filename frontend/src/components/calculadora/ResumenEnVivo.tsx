@@ -30,10 +30,12 @@ export function ResumenEnVivo({
             <h2 className="panel-title">Resumen en vivo</h2>
           </div>
           <div className="panel-empty">
-            <Package size={48} className="empty-icon" aria-hidden="true" />
+            <div className="mb-3 rounded-full bg-blue-50 p-4">
+              <Package size={48} className="empty-icon text-blue-500" aria-hidden="true" />
+            </div>
             <p>Completa el formulario para ver el resumen</p>
           </div>
-          <p className="disclaimer">
+          <p className="disclaimer bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3">
             Estimación orientativa. Las alícuotas marcadas <span className="badge-warning">A CONFIRMAR</span> dependen de la clasificación aduanera final.
           </p>
         </div>
@@ -150,7 +152,7 @@ export function ResumenEnVivo({
           </dl>
         </div>
 
-        <p className="disclaimer">
+        <p className="disclaimer bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3">
           Estimación orientativa. Las alícuotas marcadas <span className="badge-warning">A CONFIRMAR</span> dependen de la clasificación aduanera final.
         </p>
       </div>

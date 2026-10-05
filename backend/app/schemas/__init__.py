@@ -1,11 +1,11 @@
 from .calculadora import (
-    DatosEntrada, Bulto, ModoTransporte,
+    DatosEntrada,
     TributoDetalle, EscenarioResultado, ElegibilidadResultado,
     RegimenResultado, CalculoResponse
 )
 
 __all__ = [
-    "DatosEntrada", "Bulto", "ModoTransporte",
+    "DatosEntrada",
     "TributoDetalle", "EscenarioResultado", "ElegibilidadResultado",
     "RegimenResultado", "CalculoResponse"
 ]

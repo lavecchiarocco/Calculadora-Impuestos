@@ -1,19 +1,6 @@
 from decimal import Decimal
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator
-from enum import Enum
-
-
-class ModoTransporte(str, Enum):
-    AEREO = "aereo"
-    MARITIMO = "maritimo"
-
-
-class Bulto(BaseModel):
-    largo_cm: Decimal = Field(..., gt=0, description="Largo en centímetros")
-    ancho_cm: Decimal = Field(..., gt=0, description="Ancho en centímetros")
-    alto_cm: Decimal = Field(..., gt=0, description="Alto en centímetros")
-    peso_kg: Decimal = Field(..., gt=0, description="Peso real del bulto en kg")
 
 
 class DatosEntrada(BaseModel):
@@ -21,21 +8,19 @@ class DatosEntrada(BaseModel):
     precio_producto_usd: Decimal = Field(..., gt=0, description="Precio total del producto (FOB) en USD")
     costo_envio_usd: Decimal = Field(..., ge=0, description="Costo del envío en USD")
     seguro_usd: Decimal = Field(default=Decimal("0"), ge=0, description="Seguro en USD (opcional)")
-
-    # Transporte
-    modo_transporte: ModoTransporte = Field(..., description="Modo de transporte: aéreo o marítimo")
-    bultos: list[Bulto] = Field(..., min_length=1, description="Lista de bultos con medidas y peso")
-    cantidad_unidades: int = Field(..., gt=0, description="Cantidad de unidades del producto")
+    cantidad_productos: int = Field(default=1, gt=0, description="Cantidad de productos")
 
     # Impuestos
-    derecho_importacion_pct: Optional[Decimal] = Field(
-        default=None, ge=0, le=100, description="Derecho de importación % (editable, opcional si hay NCM)"
-    )
-    ncm: Optional[str] = Field(default=None, description="NCM para sugerir % desde tabla local")
     impuestos_internos_pct: Decimal = Field(default=Decimal("0"), ge=0, le=100, description="Impuestos internos %")
 
     # Tipo de cambio
     tipo_cambio_ars_usd: Decimal = Field(..., gt=0, description="Tipo de cambio ARS/USD")
+
+    # Opciones avanzadas
+    ncm: Optional[str] = Field(default=None, description="NCM para sugerir % derecho de importación")
+    derecho_importacion_pct: Optional[Decimal] = Field(
+        default=None, ge=0, le=100, description="Derecho de importación % (editable, opcional si hay NCM)"
+    )
 
     # Flags
     envio_incluye_impuestos_ddp: bool = Field(default=False, description="El envío ya incluye impuestos (DDP)")
@@ -43,25 +28,21 @@ class DatosEntrada(BaseModel):
         default=False, description="Producto requiere intervención ANMAT, INTI, ENACOM, SENASA"
     )
     incluir_percepciones: bool = Field(default=False, description="Incluir percepciones (solo régimen general)")
+    algun_bulto_supera_50kg: bool = Field(
+        default=False, description="Algún bulto supera los 50 kg (límite regímenes simplificados)"
+    )
 
     # Pequeños envíos
     envios_usados_este_anio: int = Field(
-        default=0, ge=0, le=10, description="Cantidad de envíos ya usados este año (0-5+)"
+        default=0, ge=0, le=10, description="Cantidad de envíos ya usados este año (0-10)"
     )
 
     @field_validator("precio_producto_usd", "costo_envio_usd", "seguro_usd", "tipo_cambio_ars_usd",
-                     "derecho_importacion_pct", "impuestos_internos_pct", mode="before")
+                     "impuestos_internos_pct", "derecho_importacion_pct", mode="before")
     @classmethod
     def to_decimal(cls, v):
         if isinstance(v, (int, float, str)):
             return Decimal(str(v))
-        return v
-
-    @field_validator("bultos", mode="before")
-    @classmethod
-    def validate_bultos(cls, v):
-        if isinstance(v, list):
-            return [Bulto(**b) if isinstance(b, dict) else b for b in v]
         return v
 
 
@@ -108,10 +89,6 @@ class CalculoResponse(BaseModel):
     datos_entrada: DatosEntrada
     cif_usd: Decimal
     cif_ars: Decimal
-    peso_facturable_kg: Decimal
-    peso_volumetrico_kg: Optional[Decimal] = None
-    volumen_m3: Optional[Decimal] = None
-    usd_por_kg_flete: Optional[Decimal] = None
     regímenes: list[RegimenResultado]
     regimen_mas_barato_elegible: Optional[str] = None
     advertencias_globales: list[str]

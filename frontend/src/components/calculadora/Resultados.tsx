@@ -214,10 +214,16 @@ export function Resultados({
     return (
       <div className="resultados">
         <div className="estado-vacio">
-          <Calculator size={48} aria-hidden="true" />
+          <div className="mb-3 rounded-full bg-blue-50 p-4">
+            <Calculator size={48} className="text-blue-500" aria-hidden="true" />
+          </div>
           <p>Los resultados aparecerán aquí al completar el formulario</p>
           {onCargarEjemplo && (
-            <Button variant="secondary" onClick={onCargarEjemplo} className="mt-4">
+            <Button
+              variant="primary"
+              onClick={onCargarEjemplo}
+              className="mt-4 !bg-blue-600 !text-white hover:!bg-blue-700 transition-colors font-medium"
+            >
               Cargar ejemplo
             </Button>
           )}

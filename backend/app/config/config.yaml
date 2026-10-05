@@ -3,24 +3,18 @@ tipo_cambio:
   valor_defecto: 1000.0
   etiqueta: ARS/USD
   a_confirmar: true
-peso_volumetrico:
-  divisor_aereo: 5000
-  a_confirmar: true
 topes:
   pequenos_envios:
     franquicia_usd: 400.0
     limite_fob_usd: 3000.0
-    limite_peso_kg_por_bulto: 50.0
     max_unidades_misma_especie: 3
     max_envios_por_anio: 5
     a_confirmar: true
   courier_comercial:
     limite_fob_usd: 3000.0
-    limite_peso_kg_por_bulto: 50.0
     a_confirmar: true
   regimen_general:
     sin_limite_valor: true
-    sin_limite_peso: true
     a_confirmar: false
 aliquotas:
   derecho_importacion:

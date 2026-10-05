@@ -27,17 +27,14 @@ async def calcular_impuestos(datos: DatosEntrada) -> CalculoResponse:
     - **precio_producto_usd**: Valor FOB del producto (USD)
     - **costo_envio_usd**: Costo de envío según cotización (USD)
     - **seguro_usd**: Seguro opcional (USD)
-    - **modo_transporte**: "aereo" o "maritimo"
-    - **bultos**: Lista con largo, ancho, alto (cm) y peso (kg) por bulto
-    - **cantidad_unidades**: Para costo por unidad y validación tope 3 unidades misma especie
-    - **derecho_importacion_pct**: % derecho editable (opcional si hay NCM)
-    - **ncm**: NCM para sugerir % desde tabla local
+    - **cantidad_productos**: Cantidad de productos (default 1)
     - **impuestos_internos_pct**: % impuestos internos
     - **tipo_cambio_ars_usd**: Tipo de cambio ARS/USD
     - **envio_incluye_impuestos_ddp**: Si el envío ya incluye impuestos (DDP)
     - **requiere_organismo_externo**: ANMAT, INTI, ENACOM, SENASA
     - **incluir_percepciones**: Solo régimen general
-    - **envios_usados_este_anio**: 0-5+ para pequeños envíos
+    - **algun_bulto_supera_50kg**: Si algún bulto supera 50 kg (afecta regímenes simplificados)
+    - **envios_usados_este_anio**: 0-10 para pequeños envíos
     """
     try:
         resultado = calcular_todos_regimenes(datos)

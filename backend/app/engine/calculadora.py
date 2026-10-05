@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from app.config.loader import get_config, AliquotaConfig
 from app.schemas.calculadora import (
-    DatosEntrada, Bulto, ModoTransporte,
+    DatosEntrada,
     TributoDetalle, EscenarioResultado, ElegibilidadResultado, RegimenResultado, CalculoResponse
 )
 
@@ -28,54 +28,6 @@ def a_decimal(valor: float | int | str | Decimal) -> Decimal:
     if isinstance(valor, Decimal):
         return valor
     return Decimal(str(valor))
-
-
-# --- Cálculo de peso y volumen ---
-
-@dataclass
-class PesoVolumenResultado:
-    peso_real_total_kg: Decimal
-    peso_volumetrico_kg: Optional[Decimal]
-    peso_facturable_kg: Decimal
-    volumen_m3: Optional[Decimal]
-    usd_por_kg_flete: Optional[Decimal]
-
-
-def calcular_peso_volumen(datos: DatosEntrada) -> PesoVolumenResultado:
-    """Calcula peso real, volumétrico, facturable y volumen en m³"""
-    config = get_config()
-    divisor = a_decimal(config.peso_volumetrico.divisor_aereo)
-
-    peso_real_total = sum(b.peso_kg for b in datos.bultos)
-
-    peso_volumetrico = None
-    volumen_m3 = None
-
-    if datos.modo_transporte == ModoTransporte.AEREO:
-        # Peso volumétrico aéreo = (L × A × H × bultos) / divisor
-        vol_cm3_total = sum(b.largo_cm * b.ancho_cm * b.alto_cm for b in datos.bultos)
-        peso_volumetrico = redondear(a_decimal(vol_cm3_total) / divisor)
-        # Volumen en m³ para referencia
-        volumen_m3 = redondear(a_decimal(vol_cm3_total) / Decimal("1000000"), 4)
-    else:
-        # Marítimo: solo volumen en m³
-        vol_cm3_total = sum(b.largo_cm * b.ancho_cm * b.alto_cm for b in datos.bultos)
-        volumen_m3 = redondear(a_decimal(vol_cm3_total) / Decimal("1000000"), 4)
-
-    peso_facturable = max(peso_real_total, peso_volumetrico or Decimal("0"))
-
-    # USD/kg del flete como control de razonabilidad (usa peso facturable)
-    usd_por_kg_flete = None
-    if datos.modo_transporte == ModoTransporte.AEREO and peso_facturable > 0:
-        usd_por_kg_flete = redondear(datos.costo_envio_usd / peso_facturable, 4)
-
-    return PesoVolumenResultado(
-        peso_real_total_kg=peso_real_total,
-        peso_volumetrico_kg=peso_volumetrico,
-        peso_facturable_kg=peso_facturable,
-        volumen_m3=volumen_m3,
-        usd_por_kg_flete=usd_por_kg_flete,
-    )
 
 
 # --- Obtención de alícuotas ---
@@ -193,7 +145,7 @@ def crear_tributo(
 
 # --- Motor de cálculo por régimen ---
 
-def calcular_pequenos_envios(datos: DatosEntrada, peso_vol: PesoVolumenResultado, usar_maximo: bool = True) -> RegimenResultado:
+def calcular_pequenos_envios(datos: DatosEntrada, usar_maximo: bool = True) -> RegimenResultado:
     config = get_config()
     reg_config = config.regimenes.pequenos_envios
     topes = config.topes.pequenos_envios
@@ -209,12 +161,12 @@ def calcular_pequenos_envios(datos: DatosEntrada, peso_vol: PesoVolumenResultado
     if fob_usd > a_decimal(topes.limite_fob_usd):
         motivos_no_elegible.append(f"FOB (${fob_usd} USD) supera el límite de ${topes.limite_fob_usd} USD para pequeños envíos")
 
-    for i, bulto in enumerate(datos.bultos):
-        if bulto.peso_kg > a_decimal(topes.limite_peso_kg_por_bulto):
-            motivos_no_elegible.append(f"Bulto {i+1}: peso {bulto.peso_kg} kg supera el límite de {topes.limite_peso_kg_por_bulto} kg por bulto")
+    # Validación de peso por bulto (usando el booleano)
+    if datos.algun_bulto_supera_50kg:
+        motivos_no_elegible.append("Algún bulto supera los 50 kg (límite de los regímenes simplificados)")
 
-    if datos.cantidad_unidades > topes.max_unidades_misma_especie:
-        motivos_no_elegible.append(f"Cantidad de unidades ({datos.cantidad_unidades}) supera el máximo de {topes.max_unidades_misma_especie} de la misma especie")
+    if datos.cantidad_productos > topes.max_unidades_misma_especie:
+        motivos_no_elegible.append(f"Cantidad de productos ({datos.cantidad_productos}) supera el máximo de {topes.max_unidades_misma_especie} de la misma especie")
 
     if datos.requiere_organismo_externo:
         motivos_no_elegible.append("El producto requiere intervención de organismo externo (ANMAT, INTI, ENACOM, SENASA)")
@@ -285,7 +237,7 @@ def calcular_pequenos_envios(datos: DatosEntrada, peso_vol: PesoVolumenResultado
     pct_sobre_cif = redondear((total_usd / cif_usd) * Decimal("100")) if cif_usd > 0 else Decimal("0")
     costo_total_usd = cif_usd + total_usd
     costo_total_ars = redondear(costo_total_usd * tipo_cambio)
-    costo_por_unidad_usd = redondear(costo_total_usd / datos.cantidad_unidades) if datos.cantidad_unidades > 0 else None
+    costo_por_unidad_usd = redondear(costo_total_usd / datos.cantidad_productos) if datos.cantidad_productos > 0 else None
     costo_por_unidad_ars = redondear(costo_por_unidad_usd * tipo_cambio) if costo_por_unidad_usd else None
 
     # Determinar elegibilidad
@@ -300,8 +252,10 @@ def calcular_pequenos_envios(datos: DatosEntrada, peso_vol: PesoVolumenResultado
         tributos=[TributoDetalle(
             nombre=t.nombre, base_usd=t.base_usd, alicuota_pct=redondear(t.alicuota * Decimal("100")),
             monto_usd=t.monto_usd, monto_ars=t.monto_ars,
-            es_estimado_maximo=t.es_estimado_maximo, rango_min_pct=t.rango_min_pct,
-            rango_max_pct=t.rango_max_pct, a_confirmar=t.a_confirmar
+            es_estimado_maximo=t.es_estimado_maximo, 
+            rango_min_pct=redondear(t.rango_min_pct * Decimal("100")) if t.rango_min_pct is not None else None,
+            rango_max_pct=redondear(t.rango_max_pct * Decimal("100")) if t.rango_max_pct is not None else None,
+            a_confirmar=t.a_confirmar
         ) for t in tributos],
         total_impuestos_usd=total_usd,
         total_impuestos_ars=total_ars,
@@ -327,7 +281,7 @@ def calcular_pequenos_envios(datos: DatosEntrada, peso_vol: PesoVolumenResultado
     )
 
 
-def calcular_courier_comercial(datos: DatosEntrada, peso_vol: PesoVolumenResultado, usar_maximo: bool = True) -> RegimenResultado:
+def calcular_courier_comercial(datos: DatosEntrada, usar_maximo: bool = True) -> RegimenResultado:
     config = get_config()
     reg_config = config.regimenes.courier_comercial
     topes = config.topes.courier_comercial
@@ -340,14 +294,13 @@ def calcular_courier_comercial(datos: DatosEntrada, peso_vol: PesoVolumenResulta
     advertencias = list(reg_config.advertencias)
 
     limite_fob_usd = a_decimal(topes.limite_fob_usd)
-    limite_peso_kg = a_decimal(topes.limite_peso_kg_por_bulto)
 
     if fob_usd > limite_fob_usd:
         motivos_no_elegible.append(f"FOB (${fob_usd} USD) supera el límite de ${limite_fob_usd} USD para courier comercial")
 
-    for i, bulto in enumerate(datos.bultos):
-        if bulto.peso_kg > limite_peso_kg:
-            motivos_no_elegible.append(f"Bulto {i+1}: peso {bulto.peso_kg} kg supera el límite de {limite_peso_kg} kg por bulto")
+    # Validación de peso por bulto (usando el booleano)
+    if datos.algun_bulto_supera_50kg:
+        motivos_no_elegible.append("Algún bulto supera los 50 kg (límite de los regímenes simplificados)")
 
     if datos.requiere_organismo_externo:
         motivos_no_elegible.append("El producto requiere intervención de organismo externo (ANMAT, INTI, ENACOM, SENASA)")
@@ -397,7 +350,7 @@ def calcular_courier_comercial(datos: DatosEntrada, peso_vol: PesoVolumenResulta
     pct_sobre_cif = redondear((total_usd / cif_usd) * Decimal("100")) if cif_usd > 0 else Decimal("0")
     costo_total_usd = cif_usd + total_usd
     costo_total_ars = redondear(costo_total_usd * tipo_cambio)
-    costo_por_unidad_usd = redondear(costo_total_usd / datos.cantidad_unidades) if datos.cantidad_unidades > 0 else None
+    costo_por_unidad_usd = redondear(costo_total_usd / datos.cantidad_productos) if datos.cantidad_productos > 0 else None
     costo_por_unidad_ars = redondear(costo_por_unidad_usd * tipo_cambio) if costo_por_unidad_usd else None
 
     if motivos_no_elegible:
@@ -411,8 +364,10 @@ def calcular_courier_comercial(datos: DatosEntrada, peso_vol: PesoVolumenResulta
         tributos=[TributoDetalle(
             nombre=t.nombre, base_usd=t.base_usd, alicuota_pct=redondear(t.alicuota * Decimal("100")),
             monto_usd=t.monto_usd, monto_ars=t.monto_ars,
-            es_estimado_maximo=t.es_estimado_maximo, rango_min_pct=t.rango_min_pct,
-            rango_max_pct=t.rango_max_pct, a_confirmar=t.a_confirmar
+            es_estimado_maximo=t.es_estimado_maximo, 
+            rango_min_pct=redondear(t.rango_min_pct * Decimal("100")) if t.rango_min_pct is not None else None,
+            rango_max_pct=redondear(t.rango_max_pct * Decimal("100")) if t.rango_max_pct is not None else None,
+            a_confirmar=t.a_confirmar
         ) for t in tributos],
         total_impuestos_usd=total_usd,
         total_impuestos_ars=total_ars,
@@ -438,7 +393,7 @@ def calcular_courier_comercial(datos: DatosEntrada, peso_vol: PesoVolumenResulta
     )
 
 
-def calcular_regimen_general(datos: DatosEntrada, peso_vol: PesoVolumenResultado, usar_maximo: bool = True) -> RegimenResultado:
+def calcular_regimen_general(datos: DatosEntrada, usar_maximo: bool = True) -> RegimenResultado:
     config = get_config()
     reg_config = config.regimenes.regimen_general
 
@@ -518,7 +473,7 @@ def calcular_regimen_general(datos: DatosEntrada, peso_vol: PesoVolumenResultado
     pct_sobre_cif = redondear((total_usd / cif_usd) * Decimal("100")) if cif_usd > 0 else Decimal("0")
     costo_total_usd = cif_usd + total_usd
     costo_total_ars = redondear(costo_total_usd * tipo_cambio)
-    costo_por_unidad_usd = redondear(costo_total_usd / datos.cantidad_unidades) if datos.cantidad_unidades > 0 else None
+    costo_por_unidad_usd = redondear(costo_total_usd / datos.cantidad_productos) if datos.cantidad_productos > 0 else None
     costo_por_unidad_ars = redondear(costo_por_unidad_usd * tipo_cambio) if costo_por_unidad_usd else None
 
     # Régimen general siempre elegible (solo avisos)
@@ -528,8 +483,10 @@ def calcular_regimen_general(datos: DatosEntrada, peso_vol: PesoVolumenResultado
         tributos=[TributoDetalle(
             nombre=t.nombre, base_usd=t.base_usd, alicuota_pct=redondear(t.alicuota * Decimal("100")),
             monto_usd=t.monto_usd, monto_ars=t.monto_ars,
-            es_estimado_maximo=t.es_estimado_maximo, rango_min_pct=t.rango_min_pct,
-            rango_max_pct=t.rango_max_pct, a_confirmar=t.a_confirmar
+            es_estimado_maximo=t.es_estimado_maximo, 
+            rango_min_pct=redondear(t.rango_min_pct * Decimal("100")) if t.rango_min_pct is not None else None,
+            rango_max_pct=redondear(t.rango_max_pct * Decimal("100")) if t.rango_max_pct is not None else None,
+            a_confirmar=t.a_confirmar
         ) for t in tributos],
         total_impuestos_usd=total_usd,
         total_impuestos_ars=total_ars,
@@ -569,9 +526,6 @@ def calcular_todos_regimenes(datos: DatosEntrada) -> CalculoResponse:
         # En modo DDP, no calcular impuestos (o calcular pero marcar)
         # Para simplicidad, calculamos pero advertimos
 
-    # Peso y volumen
-    peso_vol = calcular_peso_volumen(datos)
-
     # CIF
     cif_usd = datos.precio_producto_usd + datos.costo_envio_usd + datos.seguro_usd
     cif_ars = redondear(cif_usd * datos.tipo_cambio_ars_usd)
@@ -584,8 +538,8 @@ def calcular_todos_regimenes(datos: DatosEntrada) -> CalculoResponse:
         (calcular_courier_comercial, "courier_comercial"),
         (calcular_regimen_general, "regimen_general")
     ]:
-        conservador = regimen_func(datos, peso_vol, usar_maximo=True)
-        minimo = regimen_func(datos, peso_vol, usar_maximo=False)
+        conservador = regimen_func(datos, usar_maximo=True)
+        minimo = regimen_func(datos, usar_maximo=False)
 
         # Combinar: conservador tiene escenario_conservador, minimo tiene escenario_minimo
         combinado = RegimenResultado(
@@ -613,10 +567,6 @@ def calcular_todos_regimenes(datos: DatosEntrada) -> CalculoResponse:
         datos_entrada=datos,
         cif_usd=cif_usd,
         cif_ars=cif_ars,
-        peso_facturable_kg=peso_vol.peso_facturable_kg,
-        peso_volumetrico_kg=peso_vol.peso_volumetrico_kg,
-        volumen_m3=peso_vol.volumen_m3,
-        usd_por_kg_flete=peso_vol.usd_por_kg_flete,
         regímenes=regimenes,
         regimen_mas_barato_elegible=regimen_mas_barato,
         advertencias_globales=advertencias_globales

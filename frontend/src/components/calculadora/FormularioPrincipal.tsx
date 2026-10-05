@@ -340,10 +340,22 @@ export function FormularioPrincipal({
         </fieldset>
 
         <div className="formulario-actions">
-          <Button type="button" variant="secondary" onClick={() => form.reset(VALORES_DEFECTO)} disabled={disabled}>
+          <Button
+            type="button"
+            variant="secondary"
+            className="!bg-white !border-slate-300 !text-slate-700 hover:!bg-slate-50 transition-colors"
+            onClick={() => form.reset(VALORES_DEFECTO)}
+            disabled={disabled}
+          >
             Limpiar
           </Button>
-          <Button type="button" variant="secondary" onClick={() => form.reset(EJEMPLO)} disabled={disabled}>
+          <Button
+            type="button"
+            variant="primary"
+            className="!bg-blue-600 !text-white hover:!bg-blue-700 transition-colors font-medium"
+            onClick={() => form.reset(EJEMPLO)}
+            disabled={disabled}
+          >
             Cargar ejemplo
           </Button>
         </div>

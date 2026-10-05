@@ -14,7 +14,6 @@ class AliquotaConfig(BaseModel):
 class TopesPequeñosEnvios(BaseModel):
     franquicia_usd: float
     limite_fob_usd: float
-    limite_peso_kg_por_bulto: float
     max_unidades_misma_especie: int
     max_envios_por_anio: int
     a_confirmar: bool
@@ -22,13 +21,11 @@ class TopesPequeñosEnvios(BaseModel):
 
 class TopesCourierComercial(BaseModel):
     limite_fob_usd: float
-    limite_peso_kg_por_bulto: float
     a_confirmar: bool
 
 
 class TopesRegimenGeneral(BaseModel):
     sin_limite_valor: bool
-    sin_limite_peso: bool
     a_confirmar: bool
 
 
@@ -91,11 +88,6 @@ class TipoCambioConfig(BaseModel):
     a_confirmar: bool
 
 
-class PesoVolumetricoConfig(BaseModel):
-    divisor_aereo: int
-    a_confirmar: bool
-
-
 class RedondeoConfig(BaseModel):
     decimales: int
     modo: str
@@ -104,7 +96,6 @@ class RedondeoConfig(BaseModel):
 class AppConfigResponse(BaseModel):
     vigencia_desde: str
     tipo_cambio: TipoCambioConfig
-    peso_volumetrico: PesoVolumetricoConfig
     topes: TopesConfig
     aliquotas: dict[str, AliquotaConfig]
     regimenes: RegimenesConfig
@@ -114,7 +105,6 @@ class AppConfigResponse(BaseModel):
 
 class ConfigUpdateRequest(BaseModel):
     tipo_cambio: Optional[TipoCambioConfig] = None
-    peso_volumetrico: Optional[PesoVolumetricoConfig] = None
     topes: Optional[TopesConfig] = None
     aliquotas: Optional[dict[str, AliquotaConfig]] = None
     regimenes: Optional[RegimenesConfig] = None
