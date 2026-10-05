@@ -9,6 +9,7 @@ import type {
 } from "../types/api";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+const DOLAR_API_URL = "https://dolarapi.com/v1/dolares/oficial";
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -39,13 +40,17 @@ export async function buscarNCM(q: string): Promise<NCMSearchResult[]> {
 }
 
 export async function obtenerTipoCambio(): Promise<TipoCambioResponse> {
-  const response = await api.get<TipoCambioResponse>("/api/tipo-cambio");
-  return response.data;
+  const response = await axios.get<{ venta: number; fechaActualizacion: string }>(DOLAR_API_URL, { timeout: 10000 });
+  return {
+    valor: response.data.venta,
+    fuente: "dolarapi.com",
+    fecha: response.data.fechaActualizacion,
+    desde_cache: false,
+  };
 }
 
 export async function forzarActualizacionTipoCambio(): Promise<TipoCambioResponse> {
-  const response = await api.post<TipoCambioResponse>("/api/tipo-cambio/forzar-actualizacion");
-  return response.data;
+  return obtenerTipoCambio();
 }
 
 export async function healthCheck(): Promise<{ status: string }> {

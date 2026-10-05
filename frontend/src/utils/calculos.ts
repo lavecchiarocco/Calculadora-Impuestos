@@ -1,19 +1,3 @@
-export const DIVISOR_VOLUMETRICO = 5000;
-
-export function calcularPesoVolumetrico(bultos: { largo_cm: number; ancho_cm: number; alto_cm: number }[]): number {
-  const volTotal = bultos.reduce((sum, b) => sum + b.largo_cm * b.ancho_cm * b.alto_cm, 0);
-  return volTotal / DIVISOR_VOLUMETRICO;
-}
-
-export function calcularPesoFacturable(pesoReal: number, pesoVolumetrico: number): number {
-  return Math.max(pesoReal, pesoVolumetrico);
-}
-
-export function calcularVolumenM3(bultos: { largo_cm: number; ancho_cm: number; alto_cm: number }[]): number {
-  const volTotal = bultos.reduce((sum, b) => sum + b.largo_cm * b.ancho_cm * b.alto_cm, 0);
-  return volTotal / 1_000_000;
-}
-
 export function formatearNumeroAR(numero: number, decimales = 2): string {
   return new Intl.NumberFormat('es-AR', {
     minimumFractionDigits: decimales,

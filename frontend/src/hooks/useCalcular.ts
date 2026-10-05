@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { calcularImpuestos } from '@/api/client';
 import type { FormData } from '@/schemas/formSchema';
-import type { CalculoResponse } from '@/types/api';
+import type { CalculoResponse, DatosEntrada } from '@/types/api';
 
 interface UseCalcularReturn {
   calcular: (datos: FormData) => Promise<CalculoResponse>;
@@ -12,9 +12,27 @@ interface UseCalcularReturn {
   reset: () => void;
 }
 
+function prepararDatosParaAPI(datos: FormData): DatosEntrada {
+  return {
+    precio_producto_usd: datos.precio_producto_usd ?? 0,
+    costo_envio_usd: datos.costo_envio_usd ?? 0,
+    seguro_usd: datos.seguro_usd ?? 0,
+    cantidad_productos: datos.cantidad_productos ?? 0,
+    impuestos_internos_pct: datos.impuestos_internos_pct ?? 0,
+    tipo_cambio_ars_usd: datos.tipo_cambio_ars_usd ?? 0,
+    envio_incluye_impuestos_ddp: datos.envio_incluye_impuestos_ddp ?? false,
+    requiere_organismo_externo: datos.requiere_organismo_externo ?? false,
+    incluir_percepciones: datos.incluir_percepciones ?? false,
+    algun_bulto_supera_50kg: datos.algun_bulto_supera_50kg ?? false,
+    envios_usados_este_anio: datos.envios_usados_este_anio ?? 0,
+    ncm: datos.ncm ?? null,
+    derecho_importacion_pct: datos.derecho_importacion_pct ?? null,
+  };
+}
+
 export function useCalcular(): UseCalcularReturn {
   const mutation = useMutation({
-    mutationFn: (datos: FormData) => calcularImpuestos(datos),
+    mutationFn: (datos: FormData) => calcularImpuestos(prepararDatosParaAPI(datos)),
   });
 
   return {

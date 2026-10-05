@@ -1,25 +1,17 @@
-export type ModoTransporte = "aereo" | "maritimo";
-
-export interface Bulto {
-  largo_cm: number;
-  ancho_cm: number;
-  alto_cm: number;
-  peso_kg: number;
-}
-
 export interface DatosEntrada {
   precio_producto_usd: number;
   costo_envio_usd: number;
   seguro_usd: number;
-  modo_transporte: ModoTransporte;
-  bultos: Bulto[];
-  cantidad_unidades: number;
+  cantidad_productos: number;
   impuestos_internos_pct: number;
   tipo_cambio_ars_usd: number;
   envio_incluye_impuestos_ddp: boolean;
   requiere_organismo_externo: boolean;
   incluir_percepciones: boolean;
+  algun_bulto_supera_50kg: boolean;
   envios_usados_este_anio: number;
+  ncm?: string | null;
+  derecho_importacion_pct?: number | null;
 }
 
 export interface TributoDetalle {
@@ -65,10 +57,6 @@ export interface CalculoResponse {
   datos_entrada: DatosEntrada;
   cif_usd: number;
   cif_ars: number;
-  peso_facturable_kg: number;
-  peso_volumetrico_kg?: number | null;
-  volumen_m3?: number | null;
-  usd_por_kg_flete?: number | null;
   regímenes: RegimenResultado[];
   regimen_mas_barato_elegible?: string | null;
   advertencias_globales: string[];
@@ -85,7 +73,6 @@ export interface AliquotaConfig {
 export interface TopesPequeñosEnvios {
   franquicia_usd: number;
   limite_fob_usd: number;
-  limite_peso_kg_por_bulto: number;
   max_unidades_misma_especie: number;
   max_envios_por_anio: number;
   a_confirmar: boolean;
@@ -93,13 +80,11 @@ export interface TopesPequeñosEnvios {
 
 export interface TopesCourierComercial {
   limite_fob_usd: number;
-  limite_peso_kg_por_bulto: number;
   a_confirmar: boolean;
 }
 
 export interface TopesRegimenGeneral {
   sin_limite_valor: boolean;
-  sin_limite_peso: boolean;
   a_confirmar: boolean;
 }
 
@@ -162,11 +147,6 @@ export interface TipoCambioConfig {
   a_confirmar: boolean;
 }
 
-export interface PesoVolumetricoConfig {
-  divisor_aereo: number;
-  a_confirmar: boolean;
-}
-
 export interface RedondeoConfig {
   decimales: number;
   modo: string;
@@ -175,7 +155,6 @@ export interface RedondeoConfig {
 export interface AppConfigResponse {
   vigencia_desde: string;
   tipo_cambio: TipoCambioConfig;
-  peso_volumetrico: PesoVolumetricoConfig;
   topes: TopesConfig;
   aliquotas: Record<string, AliquotaConfig>;
   regimenes: RegimenesConfig;
@@ -185,7 +164,6 @@ export interface AppConfigResponse {
 
 export interface ConfigUpdateRequest {
   tipo_cambio?: TipoCambioConfig | null;
-  peso_volumetrico?: PesoVolumetricoConfig | null;
   topes?: TopesConfig | null;
   aliquotas?: Record<string, AliquotaConfig> | null;
   regimenes?: RegimenesConfig | null;
