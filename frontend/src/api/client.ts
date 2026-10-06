@@ -8,8 +8,8 @@ import type {
   TipoCambioResponse,
 } from "../types/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
-const DOLAR_API_URL = "https://dolarapi.com/v1/dolares/oficial";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://calculadora-impuestos-ht7z.onrender.com";
+const DOLAR_API_URL = "https://dolarapi.com/v1/dolares/bolsa";
 
 const api = axios.create({
   baseURL: API_BASE,
