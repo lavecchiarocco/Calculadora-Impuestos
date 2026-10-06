@@ -17,7 +17,6 @@ export const formSchema = z.object({
   // Flags - con defaults
   envio_incluye_impuestos_ddp: z.boolean().default(false),
   requiere_organismo_externo: z.boolean().default(false),
-  incluir_percepciones: z.boolean().default(false),
   envios_usados_este_anio: z.number().int().min(0).max(10).default(0),
 
   // UI state (no se envía al backend)

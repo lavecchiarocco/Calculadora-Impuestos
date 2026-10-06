@@ -1,6 +1,7 @@
 import {
   forwardRef,
   useId,
+  useState,
   type InputHTMLAttributes,
   type ReactNode,
   type Ref,
@@ -107,12 +108,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     value,
     onChange: onChangeProp,
     onBlur: onBlurProp,
+    onFocus: onFocusProp,
     ...props
   },
   ref,
 ) {
   const autoId = useId();
   const inputId = id ?? name ?? autoId;
+  const [numericDraft, setNumericDraft] = useState(value == null ? '' : String(value));
+  const [isEditingNumber, setIsEditingNumber] = useState(false);
 
   const renderInput = (
     extra: InputHTMLAttributes<HTMLInputElement>,
@@ -138,14 +142,25 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             aria-describedby={describedBy}
             aria-invalid={!!errorMessage}
             {...props}
-            value={extra.value ?? value}
+            value={type === 'number' && isEditingNumber ? numericDraft : extra.value ?? value}
+            onFocus={(event) => {
+              if (type === 'number') {
+                const currentValue = extra.value ?? value;
+                setNumericDraft(currentValue == null ? '' : String(currentValue));
+                setIsEditingNumber(true);
+              }
+              extra.onFocus?.(event);
+              onFocusProp?.(event);
+            }}
             onChange={(event) => {
+              if (type === 'number') setNumericDraft(event.currentTarget.value);
               extra.onChange?.(event);
               onChangeProp?.(event);
             }}
             onBlur={(event) => {
               extra.onBlur?.(event);
               onBlurProp?.(event);
+              if (type === 'number') setIsEditingNumber(false);
             }}
           />
           {showUnit && (

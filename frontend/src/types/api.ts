@@ -7,7 +7,7 @@ export interface DatosEntrada {
   tipo_cambio_ars_usd: number;
   envio_incluye_impuestos_ddp: boolean;
   requiere_organismo_externo: boolean;
-  incluir_percepciones: boolean;
+  incluir_percepciones?: boolean;
   algun_bulto_supera_50kg: boolean;
   envios_usados_este_anio: number;
   ncm?: string | null;
@@ -24,12 +24,16 @@ export interface TributoDetalle {
   rango_min_pct?: number | null;
   rango_max_pct?: number | null;
   a_confirmar: boolean;
+  tipo?: 'impuesto' | 'cargo' | 'informativo';
+  descripcion?: string | null;
 }
 
 export interface EscenarioResultado {
   tributos: TributoDetalle[];
   total_impuestos_usd: number;
   total_impuestos_ars: number;
+  total_cargos_usd?: number;
+  total_cargos_ars?: number;
   pct_sobre_cif: number;
   costo_total_puesto_pais_usd: number;
   costo_total_puesto_pais_ars: number;
@@ -101,6 +105,7 @@ export interface RegimenPequeñosEnvios {
   iva_sobre_valor_total: boolean;
   incluir_flete_seguro_base_iva: boolean;
   franquicia_activa_si_envios_menor_5: boolean;
+  tasa_presentacion_aduana_usd: number;
   a_confirmar: boolean;
   advertencias: string[];
 }
@@ -112,6 +117,7 @@ export interface RegimenCourierComercial {
   iva_sobre_cif_mas_derecho_tasa: boolean;
   sin_percepciones: boolean;
   sin_franquicia: boolean;
+  honorarios_courier_usd: number;
   a_confirmar: boolean;
   advertencias: string[];
 }
@@ -124,6 +130,8 @@ export interface RegimenGeneral {
   percepciones_opcionales: boolean;
   requiere_despachante: boolean;
   requiere_inscripcion_importador: boolean;
+  tasa_oficializacion_sim_usd: number;
+  honorarios_despachante_terminal_pct: number;
   a_confirmar: boolean;
   advertencias: string[];
 }

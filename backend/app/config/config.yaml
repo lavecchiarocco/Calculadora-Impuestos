@@ -67,6 +67,7 @@ regimenes:
     iva_sobre_valor_total: true
     incluir_flete_seguro_base_iva: true
     franquicia_activa_si_envios_menor_5: true
+    tasa_presentacion_aduana_usd: 0.0
     a_confirmar: true
     advertencias:
     - NO es válido si el producto es para reventa
@@ -77,8 +78,9 @@ regimenes:
     derecho_importacion_porcentaje_fijo: 0.2
     tasa_estadistica_porcentaje: 0.03
     iva_sobre_cif_mas_derecho_tasa: true
-    sin_percepciones: true
+    sin_percepciones: false
     sin_franquicia: true
+    honorarios_courier_usd: 25.0
     a_confirmar: true
     advertencias:
     - Este subrégimen es exclusivo para personas jurídicas (advertencia, no bloquea)
@@ -89,9 +91,11 @@ regimenes:
     derecho_importacion_por_ncm: true
     tasa_estadistica_porcentaje: 0.03
     iva_sobre_cif_mas_derecho_tasa: true
-    percepciones_opcionales: true
+    percepciones_opcionales: false
     requiere_despachante: true
     requiere_inscripcion_importador: true
+    tasa_oficializacion_sim_usd: 20.0
+    honorarios_despachante_terminal_pct: 0.02
     a_confirmar: false
     advertencias:
     - Requiere despachante de aduana e inscripción como importador

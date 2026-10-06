@@ -165,6 +165,15 @@ function RegimenCard({
                                 )}
                               </span>
                             )}
+                            {tributo.tipo === 'cargo' && (
+                              <span className="tax-detail-note">Cargo operativo; no incluido en total de impuestos.</span>
+                            )}
+                            {tributo.tipo === 'informativo' && (
+                              <span className="tax-detail-note">Informativo; no incluido en los totales.</span>
+                            )}
+                            {tributo.descripcion && (
+                              <span className="tax-detail-note">{tributo.descripcion}</span>
+                            )}
                           </th>
                           <td>{formatearUSD(tributo.base_usd)}</td>
                           <td>{formatearPorcentaje(tributo.alicuota_pct)}</td>
@@ -189,6 +198,12 @@ function RegimenCard({
                   <dt>Total de impuestos</dt>
                   <dd>{monto(esc.total_impuestos_usd, esc.total_impuestos_ars)}</dd>
                 </div>
+                {(esc.total_cargos_usd ?? 0) > 0 && (
+                  <div>
+                    <dt>Total de gastos operativos</dt>
+                    <dd>{monto(esc.total_cargos_usd ?? 0, esc.total_cargos_ars ?? 0)}</dd>
+                  </div>
+                )}
                 <div>
                   <dt>Porcentaje sobre CIF</dt>
                   <dd>{formatearPorcentaje(esc.pct_sobre_cif)}</dd>

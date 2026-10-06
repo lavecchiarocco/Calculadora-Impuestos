@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -27,7 +27,10 @@ class DatosEntrada(BaseModel):
     requiere_organismo_externo: bool = Field(
         default=False, description="Producto requiere intervención ANMAT, INTI, ENACOM, SENASA"
     )
-    incluir_percepciones: bool = Field(default=False, description="Incluir percepciones (solo régimen general)")
+    incluir_percepciones: bool = Field(
+        default=False,
+        description="Campo legacy aceptado por compatibilidad; no desactiva las percepciones estimadas",
+    )
     algun_bulto_supera_50kg: bool = Field(
         default=False, description="Algún bulto supera los 50 kg (límite regímenes simplificados)"
     )
@@ -56,12 +59,16 @@ class TributoDetalle(BaseModel):
     rango_min_pct: Optional[Decimal] = None
     rango_max_pct: Optional[Decimal] = None
     a_confirmar: bool = False
+    tipo: Literal["impuesto", "cargo", "informativo"] = "impuesto"
+    descripcion: Optional[str] = None
 
 
 class EscenarioResultado(BaseModel):
     tributos: list[TributoDetalle]
     total_impuestos_usd: Decimal
     total_impuestos_ars: Decimal
+    total_cargos_usd: Decimal = Decimal("0")
+    total_cargos_ars: Decimal = Decimal("0")
     pct_sobre_cif: Decimal
     costo_total_puesto_pais_usd: Decimal
     costo_total_puesto_pais_ars: Decimal

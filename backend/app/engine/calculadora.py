@@ -1,6 +1,6 @@
 from __future__ import annotations
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Optional
+from typing import Literal, Optional
 from dataclasses import dataclass
 
 from app.config.loader import get_config, AliquotaConfig
@@ -116,6 +116,8 @@ class TributoCalculado:
     rango_min_pct: Optional[Decimal]
     rango_max_pct: Optional[Decimal]
     a_confirmar: bool
+    tipo: Literal["impuesto", "cargo", "informativo"] = "impuesto"
+    descripcion: Optional[str] = None
 
 
 def crear_tributo(
@@ -126,7 +128,9 @@ def crear_tributo(
     es_estimado_maximo: bool = False,
     rango_min_pct: Optional[Decimal] = None,
     rango_max_pct: Optional[Decimal] = None,
-    a_confirmar: bool = False
+    a_confirmar: bool = False,
+    tipo: Literal["impuesto", "cargo", "informativo"] = "impuesto",
+    descripcion: Optional[str] = None,
 ) -> TributoCalculado:
     monto_usd = calcular_porcentaje(base_usd, alicuota)
     monto_ars = redondear(monto_usd * tipo_cambio)
@@ -139,8 +143,52 @@ def crear_tributo(
         es_estimado_maximo=es_estimado_maximo,
         rango_min_pct=rango_min_pct,
         rango_max_pct=rango_max_pct,
-        a_confirmar=a_confirmar
+        a_confirmar=a_confirmar,
+        tipo=tipo,
+        descripcion=descripcion,
     )
+
+
+def crear_cargo_fijo(
+    nombre: str,
+    monto_usd: Decimal,
+    tipo_cambio: Decimal,
+    descripcion: str,
+    a_confirmar: bool = True,
+) -> TributoCalculado:
+    monto_redondeado = redondear(monto_usd)
+    return TributoCalculado(
+        nombre=nombre,
+        base_usd=monto_redondeado,
+        alicuota=Decimal("0"),
+        monto_usd=monto_redondeado,
+        monto_ars=redondear(monto_redondeado * tipo_cambio),
+        es_estimado_maximo=False,
+        rango_min_pct=None,
+        rango_max_pct=None,
+        a_confirmar=a_confirmar,
+        tipo="cargo",
+        descripcion=descripcion,
+    )
+
+
+def serializar_tributos(tributos: list[TributoCalculado]) -> list[TributoDetalle]:
+    return [
+        TributoDetalle(
+            nombre=tributo.nombre,
+            base_usd=tributo.base_usd,
+            alicuota_pct=redondear(tributo.alicuota * Decimal("100")),
+            monto_usd=tributo.monto_usd,
+            monto_ars=tributo.monto_ars,
+            es_estimado_maximo=tributo.es_estimado_maximo,
+            rango_min_pct=redondear(tributo.rango_min_pct * Decimal("100")) if tributo.rango_min_pct is not None else None,
+            rango_max_pct=redondear(tributo.rango_max_pct * Decimal("100")) if tributo.rango_max_pct is not None else None,
+            a_confirmar=tributo.a_confirmar,
+            tipo=tributo.tipo,
+            descripcion=tributo.descripcion,
+        )
+        for tributo in tributos
+    ]
 
 
 # --- Motor de cálculo por régimen ---
@@ -177,6 +225,20 @@ def calcular_pequenos_envios(datos: DatosEntrada, usar_maximo: bool = True) -> R
     tributos = []
 
     franquicia_usd = a_decimal(topes.franquicia_usd)
+    tributos.append(crear_tributo(
+        "Franquicia uso personal",
+        min(fob_usd, franquicia_usd) if tiene_franquicia else Decimal("0"),
+        Decimal("0"),
+        tipo_cambio,
+        a_confirmar=True,
+        tipo="informativo",
+        descripcion=(
+            f"Franquicia actual de USD {franquicia_usd} aplicada sobre FOB."
+            if tiene_franquicia
+            else "No disponible: se alcanzó el límite anual de envíos."
+        ),
+    ))
+
     if tiene_franquicia and fob_usd <= franquicia_usd:
         # Solo IVA sobre valor total (CIF si incluir_flete_seguro_base_iva, sino FOB)
         base_iva = cif_usd if reg_config.incluir_flete_seguro_base_iva else fob_usd
@@ -231,11 +293,20 @@ def calcular_pequenos_envios(datos: DatosEntrada, usar_maximo: bool = True) -> R
                 "Impuestos internos", base_iva, al_ii, tipo_cambio, a_confirmar=False
             ))
 
+    tributos.append(crear_cargo_fijo(
+        "Tasa de Presentación a Aduana",
+        a_decimal(reg_config.tasa_presentacion_aduana_usd),
+        tipo_cambio,
+        "Importe no configurado; no se incluye en el costo estimado.",
+    ))
+
     # Calcular totales
-    total_usd = sum(t.monto_usd for t in tributos)
-    total_ars = sum(t.monto_ars for t in tributos)
+    total_usd = sum(t.monto_usd for t in tributos if t.tipo == "impuesto")
+    total_ars = sum(t.monto_ars for t in tributos if t.tipo == "impuesto")
+    total_cargos_usd = sum(t.monto_usd for t in tributos if t.tipo == "cargo")
+    total_cargos_ars = sum(t.monto_ars for t in tributos if t.tipo == "cargo")
     pct_sobre_cif = redondear((total_usd / cif_usd) * Decimal("100")) if cif_usd > 0 else Decimal("0")
-    costo_total_usd = cif_usd + total_usd
+    costo_total_usd = cif_usd + total_usd + total_cargos_usd
     costo_total_ars = redondear(costo_total_usd * tipo_cambio)
     costo_por_unidad_usd = redondear(costo_total_usd / datos.cantidad_productos) if datos.cantidad_productos > 0 else None
     costo_por_unidad_ars = redondear(costo_por_unidad_usd * tipo_cambio) if costo_por_unidad_usd else None
@@ -249,16 +320,11 @@ def calcular_pequenos_envios(datos: DatosEntrada, usar_maximo: bool = True) -> R
         elegible = True
 
     escenario = EscenarioResultado(
-        tributos=[TributoDetalle(
-            nombre=t.nombre, base_usd=t.base_usd, alicuota_pct=redondear(t.alicuota * Decimal("100")),
-            monto_usd=t.monto_usd, monto_ars=t.monto_ars,
-            es_estimado_maximo=t.es_estimado_maximo, 
-            rango_min_pct=redondear(t.rango_min_pct * Decimal("100")) if t.rango_min_pct is not None else None,
-            rango_max_pct=redondear(t.rango_max_pct * Decimal("100")) if t.rango_max_pct is not None else None,
-            a_confirmar=t.a_confirmar
-        ) for t in tributos],
+        tributos=serializar_tributos(tributos),
         total_impuestos_usd=total_usd,
         total_impuestos_ars=total_ars,
+        total_cargos_usd=total_cargos_usd,
+        total_cargos_ars=total_cargos_ars,
         pct_sobre_cif=pct_sobre_cif,
         costo_total_puesto_pais_usd=costo_total_usd,
         costo_total_puesto_pais_ars=costo_total_ars,
@@ -343,12 +409,41 @@ def calcular_courier_comercial(datos: DatosEntrada, usar_maximo: bool = True) ->
             "Impuestos internos", base_iva, al_ii, tipo_cambio, a_confirmar=False
         ))
 
-    # Sin percepciones en este régimen
+    # Percepciones estimadas incluidas según el escenario.
+    al_perc_iva, min_pi, max_pi, a_conf_pi, _ = get_percepcion_iva(usar_maximo)
+    tributos.append(crear_tributo(
+        "Percepción IVA Adicional",
+        base_iva,
+        al_perc_iva,
+        tipo_cambio,
+        es_estimado_maximo=usar_maximo and al_perc_iva == max_pi,
+        rango_min_pct=min_pi,
+        rango_max_pct=max_pi,
+        a_confirmar=True,
+        descripcion="Percepción estimada sobre CIF + derecho + tasa.",
+    ))
+    tributos.append(crear_tributo(
+        "Anticipo de Ganancias",
+        base_iva,
+        Decimal("0.06"),
+        tipo_cambio,
+        a_confirmar=True,
+        descripcion="Alícuota estimada del 6%; confirmar según situación fiscal.",
+    ))
 
-    total_usd = sum(t.monto_usd for t in tributos)
-    total_ars = sum(t.monto_ars for t in tributos)
+    tributos.append(crear_cargo_fijo(
+        "Honorarios de Courier (Handling/Desconsolidación)",
+        a_decimal(reg_config.honorarios_courier_usd),
+        tipo_cambio,
+        "Cargo fijo estimado; puede variar según el operador.",
+    ))
+
+    total_usd = sum(t.monto_usd for t in tributos if t.tipo == "impuesto")
+    total_ars = sum(t.monto_ars for t in tributos if t.tipo == "impuesto")
+    total_cargos_usd = sum(t.monto_usd for t in tributos if t.tipo == "cargo")
+    total_cargos_ars = sum(t.monto_ars for t in tributos if t.tipo == "cargo")
     pct_sobre_cif = redondear((total_usd / cif_usd) * Decimal("100")) if cif_usd > 0 else Decimal("0")
-    costo_total_usd = cif_usd + total_usd
+    costo_total_usd = cif_usd + total_usd + total_cargos_usd
     costo_total_ars = redondear(costo_total_usd * tipo_cambio)
     costo_por_unidad_usd = redondear(costo_total_usd / datos.cantidad_productos) if datos.cantidad_productos > 0 else None
     costo_por_unidad_ars = redondear(costo_por_unidad_usd * tipo_cambio) if costo_por_unidad_usd else None
@@ -361,16 +456,11 @@ def calcular_courier_comercial(datos: DatosEntrada, usar_maximo: bool = True) ->
         elegible = True
 
     escenario = EscenarioResultado(
-        tributos=[TributoDetalle(
-            nombre=t.nombre, base_usd=t.base_usd, alicuota_pct=redondear(t.alicuota * Decimal("100")),
-            monto_usd=t.monto_usd, monto_ars=t.monto_ars,
-            es_estimado_maximo=t.es_estimado_maximo, 
-            rango_min_pct=redondear(t.rango_min_pct * Decimal("100")) if t.rango_min_pct is not None else None,
-            rango_max_pct=redondear(t.rango_max_pct * Decimal("100")) if t.rango_max_pct is not None else None,
-            a_confirmar=t.a_confirmar
-        ) for t in tributos],
+        tributos=serializar_tributos(tributos),
         total_impuestos_usd=total_usd,
         total_impuestos_ars=total_ars,
+        total_cargos_usd=total_cargos_usd,
+        total_cargos_ars=total_cargos_ars,
         pct_sobre_cif=pct_sobre_cif,
         costo_total_puesto_pais_usd=costo_total_usd,
         costo_total_puesto_pais_ars=costo_total_ars,
@@ -442,36 +532,56 @@ def calcular_regimen_general(datos: DatosEntrada, usar_maximo: bool = True) -> R
             "Impuestos internos", base_iva, al_ii, tipo_cambio, a_confirmar=False
         ))
 
-    # Percepciones (solo si se activan)
-    if datos.incluir_percepciones:
-        # Percepción IVA
-        al_perc_iva, min_pi, max_pi, a_conf_pi, etiqueta_pi = get_percepcion_iva(usar_maximo)
-        es_max_pi = usar_maximo and al_perc_iva == max_pi
-        tributos.append(crear_tributo(
-            etiqueta_pi, base_iva, al_perc_iva, tipo_cambio,
-            es_estimado_maximo=es_max_pi, rango_min_pct=min_pi, rango_max_pct=max_pi, a_confirmar=a_conf_pi
-        ))
+    al_perc_iva, min_pi, max_pi, a_conf_pi, _ = get_percepcion_iva(usar_maximo)
+    tributos.append(crear_tributo(
+        "Percepción IVA Adicional",
+        base_iva,
+        al_perc_iva,
+        tipo_cambio,
+        es_estimado_maximo=usar_maximo and al_perc_iva == max_pi,
+        rango_min_pct=min_pi,
+        rango_max_pct=max_pi,
+        a_confirmar=True,
+        descripcion="Percepción estimada sobre CIF + derecho + tasa.",
+    ))
+    tributos.append(crear_tributo(
+        "Anticipo de Ganancias",
+        base_iva,
+        Decimal("0.06"),
+        tipo_cambio,
+        a_confirmar=True,
+        descripcion="Alícuota estimada del 6%; confirmar según situación fiscal.",
+    ))
+    tributos.append(crear_tributo(
+        "Percepción Ingresos Brutos - IIBB",
+        base_iva,
+        Decimal("0.025"),
+        tipo_cambio,
+        a_confirmar=True,
+        descripcion="Alícuota estimada del 2,5%; puede variar según jurisdicción.",
+    ))
+    tributos.append(crear_cargo_fijo(
+        "Tasa de Oficialización SIM",
+        a_decimal(reg_config.tasa_oficializacion_sim_usd),
+        tipo_cambio,
+        "Cargo fijo estimado, sujeto a confirmación.",
+    ))
+    tributos.append(crear_tributo(
+        "Honorarios Despachante y Terminal",
+        cif_usd,
+        a_decimal(reg_config.honorarios_despachante_terminal_pct),
+        tipo_cambio,
+        a_confirmar=True,
+        tipo="cargo",
+        descripcion="Estimación porcentual sobre CIF; no es un impuesto.",
+    ))
 
-        # Percepción Ganancias
-        al_perc_gan, min_pg, max_pg, a_conf_pg, etiqueta_pg = get_percepcion_ganancias(usar_maximo)
-        es_max_pg = usar_maximo and al_perc_gan == max_pg
-        tributos.append(crear_tributo(
-            etiqueta_pg, base_iva, al_perc_gan, tipo_cambio,
-            es_estimado_maximo=es_max_pg, rango_min_pct=min_pg, rango_max_pct=max_pg, a_confirmar=a_conf_pg
-        ))
-
-        # Percepción IIBB
-        al_perc_iibb, min_piibb, max_piibb, a_conf_piibb, etiqueta_piibb = get_percepcion_iibb(usar_maximo)
-        es_max_piibb = usar_maximo and al_perc_iibb == max_piibb
-        tributos.append(crear_tributo(
-            etiqueta_piibb, base_iva, al_perc_iibb, tipo_cambio,
-            es_estimado_maximo=es_max_piibb, rango_min_pct=min_piibb, rango_max_pct=max_piibb, a_confirmar=a_conf_piibb
-        ))
-
-    total_usd = sum(t.monto_usd for t in tributos)
-    total_ars = sum(t.monto_ars for t in tributos)
+    total_usd = sum(t.monto_usd for t in tributos if t.tipo == "impuesto")
+    total_ars = sum(t.monto_ars for t in tributos if t.tipo == "impuesto")
+    total_cargos_usd = sum(t.monto_usd for t in tributos if t.tipo == "cargo")
+    total_cargos_ars = sum(t.monto_ars for t in tributos if t.tipo == "cargo")
     pct_sobre_cif = redondear((total_usd / cif_usd) * Decimal("100")) if cif_usd > 0 else Decimal("0")
-    costo_total_usd = cif_usd + total_usd
+    costo_total_usd = cif_usd + total_usd + total_cargos_usd
     costo_total_ars = redondear(costo_total_usd * tipo_cambio)
     costo_por_unidad_usd = redondear(costo_total_usd / datos.cantidad_productos) if datos.cantidad_productos > 0 else None
     costo_por_unidad_ars = redondear(costo_por_unidad_usd * tipo_cambio) if costo_por_unidad_usd else None
@@ -480,16 +590,11 @@ def calcular_regimen_general(datos: DatosEntrada, usar_maximo: bool = True) -> R
     elegible = True
 
     escenario = EscenarioResultado(
-        tributos=[TributoDetalle(
-            nombre=t.nombre, base_usd=t.base_usd, alicuota_pct=redondear(t.alicuota * Decimal("100")),
-            monto_usd=t.monto_usd, monto_ars=t.monto_ars,
-            es_estimado_maximo=t.es_estimado_maximo, 
-            rango_min_pct=redondear(t.rango_min_pct * Decimal("100")) if t.rango_min_pct is not None else None,
-            rango_max_pct=redondear(t.rango_max_pct * Decimal("100")) if t.rango_max_pct is not None else None,
-            a_confirmar=t.a_confirmar
-        ) for t in tributos],
+        tributos=serializar_tributos(tributos),
         total_impuestos_usd=total_usd,
         total_impuestos_ars=total_ars,
+        total_cargos_usd=total_cargos_usd,
+        total_cargos_ars=total_cargos_ars,
         pct_sobre_cif=pct_sobre_cif,
         costo_total_puesto_pais_usd=costo_total_usd,
         costo_total_puesto_pais_ars=costo_total_ars,

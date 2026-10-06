@@ -25,13 +25,6 @@ const OPCIONES_TOGGLE = [
     icon: AlertCircle,
     advertencia: 'Agrega tiempo y costo. Consultá los requisitos específicos para tu NCM.',
   },
-  {
-    key: 'incluir_percepciones' as const,
-    label: 'Incluir percepciones (RG 4815/5272)',
-    descripcion: 'Percepción de IVA y Ganancias sobre la importación. Aplica según tu situación fiscal.',
-    icon: CheckCircle,
-    advertencia: 'Solo si estás inscripto en los regímenes correspondientes.',
-  },
 ] as const;
 
 export function FormularioPrincipal({
@@ -133,7 +126,6 @@ export function FormularioPrincipal({
         </fieldset>
 
         <fieldset className="field-group">
-          <legend className="fieldset-legend">Tipo de cambio</legend>
           <div className="grid grid-2">
             <div className="field">
               <label className="field-label flex items-center justify-between">
@@ -373,7 +365,6 @@ const VALORES_DEFECTO = {
   tipo_cambio_ars_usd: 0,
   envio_incluye_impuestos_ddp: false,
   requiere_organismo_externo: false,
-  incluir_percepciones: false,
   algun_bulto_supera_50kg: false,
   envios_usados_este_anio: 0,
   ncm: '',
@@ -391,7 +382,6 @@ const EJEMPLO = {
   tipo_cambio_ars_usd: 1000,
   envio_incluye_impuestos_ddp: false,
   requiere_organismo_externo: false,
-  incluir_percepciones: true,
   algun_bulto_supera_50kg: false,
   envios_usados_este_anio: 2,
   acordion_abierto: true,

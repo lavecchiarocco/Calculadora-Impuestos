@@ -32,7 +32,7 @@ async def calcular_impuestos(datos: DatosEntrada) -> CalculoResponse:
     - **tipo_cambio_ars_usd**: Tipo de cambio ARS/USD
     - **envio_incluye_impuestos_ddp**: Si el envío ya incluye impuestos (DDP)
     - **requiere_organismo_externo**: ANMAT, INTI, ENACOM, SENASA
-    - **incluir_percepciones**: Solo régimen general
+    - **incluir_percepciones**: Campo legacy aceptado por compatibilidad; las percepciones estimadas se incluyen en los regímenes correspondientes
     - **algun_bulto_supera_50kg**: Si algún bulto supera 50 kg (afecta regímenes simplificados)
     - **envios_usados_este_anio**: 0-10 para pequeños envíos
     """

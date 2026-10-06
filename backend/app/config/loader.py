@@ -43,6 +43,7 @@ class RegimenPequeñosEnvios(BaseModel):
     iva_sobre_valor_total: bool
     incluir_flete_seguro_base_iva: bool
     franquicia_activa_si_envios_menor_5: bool
+    tasa_presentacion_aduana_usd: float = 0
     a_confirmar: bool
     advertencias: list[str]
 
@@ -54,6 +55,7 @@ class RegimenCourierComercial(BaseModel):
     iva_sobre_cif_mas_derecho_tasa: bool
     sin_percepciones: bool
     sin_franquicia: bool
+    honorarios_courier_usd: float = 25
     a_confirmar: bool
     advertencias: list[str]
 
@@ -66,6 +68,8 @@ class RegimenGeneral(BaseModel):
     percepciones_opcionales: bool
     requiere_despachante: bool
     requiere_inscripcion_importador: bool
+    tasa_oficializacion_sim_usd: float = 20
+    honorarios_despachante_terminal_pct: float = 0.02
     a_confirmar: bool
     advertencias: list[str]
 

@@ -25,7 +25,6 @@ def crear_datos_base(**kwargs) -> DatosEntrada:
         "tipo_cambio_ars_usd": Decimal("1000"),
         "envio_incluye_impuestos_ddp": False,
         "requiere_organismo_externo": False,
-        "incluir_percepciones": False,
         "algun_bulto_supera_50kg": False,
         "envios_usados_este_anio": 0,
     }
@@ -62,11 +61,17 @@ class TestCourierComercial:
         # IVA 21% sobre (CIF + derecho + tasa) = 1200 + 240 + 36 = 1476 * 0.21 = 309.96
         assert tributos["IVA"].monto_usd == Decimal("309.96")
 
-        # Total tributos = 240 + 36 + 309.96 = 585.96
-        assert conservador.total_impuestos_usd == Decimal("585.96")
+        # Percepciones: 20% + 6% sobre USD 1.476; courier: cargo fijo USD 25.
+        assert conservador.total_impuestos_usd == Decimal("969.72")
+        assert conservador.total_cargos_usd == Decimal("25.00")
 
-        # Costo total puesto en país = 1200 + 585.96 = 1785.96
-        assert conservador.costo_total_puesto_pais_usd == Decimal("1785.96")
+        # Los cargos operativos no se cuentan como impuestos, pero sí en el costo total.
+        assert conservador.costo_total_puesto_pais_usd == Decimal("2194.72")
+        tributos = {t.nombre: t for t in conservador.tributos}
+        assert tributos["Percepción IVA Adicional"].base_usd == Decimal("1476.00")
+        assert tributos["Percepción IVA Adicional"].monto_usd == Decimal("295.20")
+        assert tributos["Anticipo de Ganancias"].monto_usd == Decimal("88.56")
+        assert tributos["Honorarios de Courier (Handling/Desconsolidación)"].tipo == "cargo"
 
 
 class TestPequeñosEnvios:
@@ -90,6 +95,9 @@ class TestPequeñosEnvios:
         tributos = {t.nombre: t for t in conservador.tributos}
         assert "IVA" in tributos
         assert conservador.total_impuestos_usd == Decimal("73.50")
+        assert tributos["Franquicia uso personal"].tipo == "informativo"
+        assert tributos["Franquicia uso personal"].base_usd == Decimal("300")
+        assert tributos["Tasa de Presentación a Aduana"].monto_usd == Decimal("0.00")
 
         # No debe haber derecho ni tasa
         nombres = [t.nombre for t in conservador.tributos]
@@ -125,6 +133,10 @@ class TestPequeñosEnvios:
         assert tasa.base_usd == Decimal("200")
         assert tasa.monto_usd == Decimal("6.00")
 
+        franquicia = next(t for t in conservador.tributos if t.nombre == "Franquicia uso personal")
+        assert franquicia.base_usd == Decimal("400")
+        assert franquicia.tipo == "informativo"
+        assert not any("Arancel Único" in t.nombre for t in conservador.tributos)
         iva = next(t for t in conservador.tributos if "IVA" in t.nombre)
         assert iva.base_usd == Decimal("700")  # Sobre CIF total
         assert iva.monto_usd == Decimal("147.00")
@@ -176,8 +188,11 @@ class TestRegimenGeneral:
         general = next(r for r in resultado.regímenes if r.regimen_id == "regimen_general")
         courier = next(r for r in resultado.regímenes if r.regimen_id == "courier_comercial")
 
-        assert general.escenario_conservador.total_impuestos_usd == Decimal("686.55")
-        assert courier.escenario_conservador.total_impuestos_usd == Decimal("500.51")
+        assert general.escenario_conservador.total_impuestos_usd == Decimal("1089.68")
+        assert general.escenario_conservador.total_cargos_usd == Decimal("40.50")
+        assert general.escenario_conservador.costo_total_puesto_pais_usd == Decimal("2155.18")
+        assert courier.escenario_conservador.total_impuestos_usd == Decimal("828.31")
+        assert courier.escenario_conservador.total_cargos_usd == Decimal("25.00")
 
     def test_derecho_manual_cero_sigue_siendo_un_override_valido(self):
         """Un cero ingresado explícitamente no debe confundirse con un campo vacío."""
@@ -191,10 +206,10 @@ class TestRegimenGeneral:
 
         general = next(r for r in resultado.regímenes if r.regimen_id == "regimen_general")
 
-        assert general.escenario_conservador.total_impuestos_usd == Decimal("252.46")
+        assert general.escenario_conservador.total_impuestos_usd == Decimal("553.35")
 
-    def test_regimen_general_sin_percepciones(self):
-        """Régimen general sin percepciones"""
+    def test_regimen_general_incluye_percepciones_con_flag_legacy_desactivado(self):
+        """El campo legacy no excluye las percepciones estimadas."""
         datos = crear_datos_base(
             precio_producto_usd=Decimal("1000"),
             costo_envio_usd=Decimal("200"),
@@ -208,7 +223,7 @@ class TestRegimenGeneral:
         # Derecho 35% sobre CIF (1200) = 420
         # Tasa 3% sobre CIF = 36
         # IVA 21% sobre (1200 + 420 + 36) = 1656 * 0.21 = 347.76
-        # Total = 420 + 36 + 347.76 = 803.76
+        # Additional estimate lines are always applied; cargo operativo is kept separate.
         tributos = {t.nombre: t for t in conservador.tributos}
 
         derecho = next(t for t in conservador.tributos if "Derecho" in t.nombre)
@@ -220,10 +235,12 @@ class TestRegimenGeneral:
         iva = next(t for t in conservador.tributos if t.nombre == "IVA")
         assert iva.monto_usd == Decimal("347.76")
 
-        assert conservador.total_impuestos_usd == Decimal("803.76")
+        assert conservador.total_impuestos_usd == Decimal("1275.72")
+        assert conservador.total_cargos_usd == Decimal("44.00")
+        assert conservador.costo_total_puesto_pais_usd == Decimal("2519.72")
 
-    def test_regimen_general_con_percepciones(self):
-        """Régimen general con percepciones activas"""
+    def test_regimen_general_incluye_percepciones_con_flag_legacy_activado(self):
+        """Las percepciones se incluyen aunque un cliente legacy las solicite."""
         datos = crear_datos_base(
             precio_producto_usd=Decimal("1000"),
             costo_envio_usd=Decimal("200"),
@@ -236,10 +253,10 @@ class TestRegimenGeneral:
 
         # Base IVA = CIF + derecho + tasa = 1200 + 420 + 36 = 1656
         # Percepción IVA 20% * 1656 = 331.20
-        # Percepción Ganancias 11% * 1656 = 182.16
+        # Anticipo de Ganancias 6% * 1656 = 99.36
         # Percepción IIBB 2.5% * 1656 = 41.40
-        # Total percepciones = 554.76
-        # Total general = 803.76 + 554.76 = 1358.52
+        # Total percepciones = 471.96
+        # Total impuestos = 803.76 + 471.96 = 1275.72
 
         tributos = {t.nombre: t for t in conservador.tributos}
 
@@ -247,12 +264,19 @@ class TestRegimenGeneral:
         assert perc_iva.monto_usd == Decimal("331.20")
 
         perc_gan = next(t for t in conservador.tributos if "Ganancias" in t.nombre)
-        assert perc_gan.monto_usd == Decimal("182.16")
+        assert perc_gan.monto_usd == Decimal("99.36")
 
         perc_iibb = next(t for t in conservador.tributos if "IIBB" in t.nombre)
         assert perc_iibb.monto_usd == Decimal("41.40")
+        assert perc_iva.base_usd == Decimal("1656.00")
+        assert perc_gan.base_usd == Decimal("1656.00")
+        assert perc_iibb.base_usd == Decimal("1656.00")
+        assert perc_iva.alicuota_pct == Decimal("20.00")
+        assert perc_gan.alicuota_pct == Decimal("6.00")
+        assert perc_iibb.alicuota_pct == Decimal("2.50")
 
-        assert conservador.total_impuestos_usd == Decimal("1358.52")
+        assert conservador.total_impuestos_usd == Decimal("1275.72")
+        assert conservador.total_cargos_usd == Decimal("44.00")
 
     def test_regimen_general_con_ncm(self):
         """Régimen general con NCM que define derecho 0% (ej. laptops)"""
@@ -282,7 +306,7 @@ class TestRegimenGeneral:
         assert iva.alicuota_pct == Decimal("10.5")
         assert iva.monto_usd == Decimal("129.78")
 
-        assert conservador.total_impuestos_usd == Decimal("165.78")
+        assert conservador.total_impuestos_usd == Decimal("518.04")
 
 
 class TestEscenariosConservadorMinimo:

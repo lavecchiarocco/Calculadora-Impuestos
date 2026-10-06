@@ -42,7 +42,6 @@ const VALORES_DEFECTO = {
   tipo_cambio_ars_usd: 0,
   envio_incluye_impuestos_ddp: false,
   requiere_organismo_externo: false,
-  incluir_percepciones: false,
   algun_bulto_supera_50kg: false,
   envios_usados_este_anio: 0,
   ncm: '',
@@ -61,7 +60,6 @@ const EJEMPLO = {
   tipo_cambio_ars_usd: 1000,
   envio_incluye_impuestos_ddp: false,
   requiere_organismo_externo: false,
-  incluir_percepciones: true,
   algun_bulto_supera_50kg: false,
   envios_usados_este_anio: 2,
   acordion_abierto: true,
@@ -94,6 +92,8 @@ export function useCalculadora(): UseCalculadoraReturn {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const calcularRef = useRef<(() => Promise<void>) | null>(null);
+  const revisionFormularioRef = useRef(0);
+  const solicitudCalculoRef = useRef(0);
 
   const form = useForm<FormInput, unknown, FormData>({
     resolver: zodResolver(formSchema),
@@ -155,15 +155,29 @@ export function useCalculadora(): UseCalculadoraReturn {
       setError('Revisá los campos marcados antes de calcular.');
       return;
     }
+    const revisionFormulario = revisionFormularioRef.current;
+    const solicitudCalculo = ++solicitudCalculoRef.current;
     setCargando(true);
     setError(null);
     try {
       const resultado = await calcular(validacion.data);
-      setResultado(resultado);
+      if (
+        revisionFormulario === revisionFormularioRef.current
+        && solicitudCalculo === solicitudCalculoRef.current
+      ) {
+        setResultado(resultado);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al calcular');
+      if (
+        revisionFormulario === revisionFormularioRef.current
+        && solicitudCalculo === solicitudCalculoRef.current
+      ) {
+        setError(err instanceof Error ? err.message : 'Error al calcular');
+      }
     } finally {
-      setCargando(false);
+      if (solicitudCalculo === solicitudCalculoRef.current) {
+        setCargando(false);
+      }
     }
   }, [form, calcular]);
 
@@ -172,12 +186,15 @@ export function useCalculadora(): UseCalculadoraReturn {
   // Guardar en localStorage y calcular con debounce
   useEffect(() => {
     const programarCalculo = (datos: FormInput) => {
+      revisionFormularioRef.current += 1;
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (!formSchema.safeParse(datos).success) {
         setResultado(null);
         setError(null);
+        setCargando(false);
         return;
       }
+      setCargando(false);
       debounceRef.current = setTimeout(() => {
         calcularRef.current?.();
       }, 400);

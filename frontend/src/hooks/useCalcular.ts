@@ -22,7 +22,6 @@ function prepararDatosParaAPI(datos: FormData): DatosEntrada {
     tipo_cambio_ars_usd: datos.tipo_cambio_ars_usd ?? 0,
     envio_incluye_impuestos_ddp: datos.envio_incluye_impuestos_ddp ?? false,
     requiere_organismo_externo: datos.requiere_organismo_externo ?? false,
-    incluir_percepciones: datos.incluir_percepciones ?? false,
     algun_bulto_supera_50kg: datos.algun_bulto_supera_50kg ?? false,
     envios_usados_este_anio: datos.envios_usados_este_anio ?? 0,
     ncm: datos.ncm ?? null,

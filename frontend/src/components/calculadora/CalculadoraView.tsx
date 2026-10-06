@@ -36,7 +36,7 @@ export function CalculadoraView() {
         <main className="formulario-panel">
           <FormularioPrincipal
             form={calculadora.form}
-            disabled={calculadora.cargando || calculadora.cargandoDolarInicial}
+            disabled={calculadora.cargandoDolarInicial}
             onBuscarDolar={handleBuscarDolar}
             buscandoDolar={buscandoDolar || calculadora.cargandoDolarInicial}
           />
