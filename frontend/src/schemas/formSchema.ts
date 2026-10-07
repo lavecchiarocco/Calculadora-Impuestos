@@ -6,6 +6,7 @@ export const formSchema = z.object({
   costo_envio_usd: z.number().min(0, 'El costo de envío no puede ser negativo').default(0),
   seguro_usd: z.number().min(0, 'El seguro no puede ser negativo').default(0),
   cantidad_productos: z.number().int().min(1, 'La cantidad debe ser al menos 1').default(0),
+  max_unidades_misma_especie: z.number().int().min(1, 'Debe ser al menos 1').default(1),
 
   // Opciones avanzadas - opcionales (null si no se informan)
   algun_bulto_supera_50kg: z.boolean().optional(),

@@ -393,6 +393,7 @@ class TestAdvertenciasElegibilidad:
         datos = crear_datos_base(
             precio_producto_usd=Decimal("500"),
             cantidad_productos=5,
+            max_unidades_misma_especie=5,
         )
         resultado = calcular_todos_regimenes(datos)
 

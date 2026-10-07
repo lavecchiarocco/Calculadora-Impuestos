@@ -213,8 +213,13 @@ def calcular_pequenos_envios(datos: DatosEntrada, usar_maximo: bool = True) -> R
     if datos.algun_bulto_supera_50kg:
         motivos_no_elegible.append("Algún bulto supera los 50 kg (límite de los regímenes simplificados)")
 
-    if datos.cantidad_productos > topes.max_unidades_misma_especie:
-        motivos_no_elegible.append(f"Cantidad de productos ({datos.cantidad_productos}) supera el máximo de {topes.max_unidades_misma_especie} de la misma especie")
+    # Validación de unidades de la misma especie (máximo 3 productos idénticos)
+    max_iguales = min(datos.max_unidades_misma_especie, datos.cantidad_productos)
+    if max_iguales > topes.max_unidades_misma_especie:
+        motivos_no_elegible.append(
+            f"Cantidad de productos idénticos ({max_iguales}) supera el máximo de {topes.max_unidades_misma_especie} "
+            f"de la misma especie permitidos en el régimen simplificado"
+        )
 
     if datos.requiere_organismo_externo:
         motivos_no_elegible.append("El producto requiere intervención de organismo externo (ANMAT, INTI, ENACOM, SENASA)")

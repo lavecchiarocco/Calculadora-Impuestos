@@ -8,7 +8,10 @@ class DatosEntrada(BaseModel):
     precio_producto_usd: Decimal = Field(..., gt=0, description="Precio total del producto (FOB) en USD")
     costo_envio_usd: Decimal = Field(..., ge=0, description="Costo del envío en USD")
     seguro_usd: Decimal = Field(default=Decimal("0"), ge=0, description="Seguro en USD (opcional)")
-    cantidad_productos: int = Field(default=1, gt=0, description="Cantidad de productos")
+    cantidad_productos: int = Field(default=1, gt=0, description="Cantidad total de productos")
+    max_unidades_misma_especie: int = Field(
+        default=1, gt=0, description="Máxima cantidad de productos idénticos (misma especie)"
+    )
 
     # Impuestos
     impuestos_internos_pct: Decimal = Field(default=Decimal("0"), ge=0, le=100, description="Impuestos internos %")

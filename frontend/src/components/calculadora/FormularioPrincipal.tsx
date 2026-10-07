@@ -122,6 +122,30 @@ export function FormularioPrincipal({
                 />
               )}
             />
+            <Controller
+              control={control}
+              name="max_unidades_misma_especie"
+              rules={{ min: { value: 1, message: 'Mínimo 1' } }}
+              render={({ field }) => {
+                const cantidadTotal = watch('cantidad_productos') ?? 99;
+                return (
+                  <Input
+                    label="Máx. productos idénticos"
+                    type="number"
+                    step="1"
+                    min="1"
+                    max={cantidadTotal}
+                    error={errors.max_unidades_misma_especie?.message}
+                    disabled={disabled}
+                    value={field.value ?? ''}
+                    placeholder="Igual a cantidad"
+                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                    onBlur={field.onBlur}
+                    autoComplete="off"
+                  />
+                );
+              }}
+            />
           </div>
         </fieldset>
 
@@ -361,6 +385,7 @@ const VALORES_DEFECTO = {
   costo_envio_usd: 0,
   seguro_usd: 0,
   cantidad_productos: 0,
+  max_unidades_misma_especie: 1,
   impuestos_internos_pct: 0,
   tipo_cambio_ars_usd: 0,
   envio_incluye_impuestos_ddp: false,
@@ -377,6 +402,7 @@ const EJEMPLO = {
   costo_envio_usd: 350,
   seguro_usd: 50,
   cantidad_productos: 10,
+  max_unidades_misma_especie: 3,
   ncm: '8471.30.00',
   impuestos_internos_pct: 0,
   tipo_cambio_ars_usd: 1000,

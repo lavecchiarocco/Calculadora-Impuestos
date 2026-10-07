@@ -18,6 +18,7 @@ function prepararDatosParaAPI(datos: FormData): DatosEntrada {
     costo_envio_usd: datos.costo_envio_usd ?? 0,
     seguro_usd: datos.seguro_usd ?? 0,
     cantidad_productos: datos.cantidad_productos ?? 0,
+    max_unidades_misma_especie: datos.max_unidades_misma_especie ?? 1,
     impuestos_internos_pct: datos.impuestos_internos_pct ?? 0,
     tipo_cambio_ars_usd: datos.tipo_cambio_ars_usd ?? 0,
     envio_incluye_impuestos_ddp: datos.envio_incluye_impuestos_ddp ?? false,

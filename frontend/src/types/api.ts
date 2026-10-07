@@ -3,6 +3,7 @@ export interface DatosEntrada {
   costo_envio_usd: number;
   seguro_usd: number;
   cantidad_productos: number;
+  max_unidades_misma_especie: number;
   impuestos_internos_pct: number;
   tipo_cambio_ars_usd: number;
   envio_incluye_impuestos_ddp: boolean;
