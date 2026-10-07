@@ -1,8 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { Calculator, X } from 'lucide-react';
+import { Calculator, X, Download } from 'lucide-react';
 import type { CalculoResponse, RegimenResultado } from '@/types/api';
 import { formatearUSD, formatearARS, formatearPorcentaje } from '@/utils/format';
 import { Button } from '@/components/ui';
+import { descargarPDF } from '@/utils/pdf';
 
 interface ResultadosProps {
   resultado: CalculoResponse | null;
@@ -225,6 +226,11 @@ export function Resultados({
   sensibilidadDolar,
   onCargarEjemplo,
 }: ResultadosProps) {
+  const handleDescargarPDF = () => {
+    if (!resultado) return;
+    descargarPDF({ resultado, moneda, escenario, sensibilidadDolar });
+  };
+
   if (!resultado) {
     return (
       <div className="resultados">
@@ -250,9 +256,9 @@ export function Resultados({
   const masBaratoId = resultado.regimen_mas_barato_elegible;
   return (
     <div className="resultados animate-step-in w-full">
-      <div className="resultados-header mb-6">
+      <div className="resultados-header mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="resultados-title">Comparativa Detallada de Regímenes</h2>
-        <div className="resultados-controls">
+        <div className="resultados-controls flex flex-wrap items-center gap-3 w-full sm:w-auto">
           <div className="escenario-toggle" role="group" aria-label="Escenario">
             <button
               type="button"
@@ -272,6 +278,17 @@ export function Resultados({
           <span className="escenario-ayuda text-caption text-surface-500">
             Conservador: todas las alícuotas en su valor máximo.
           </span>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={handleDescargarPDF}
+            className="ml-auto !bg-blue-600 !text-white hover:!bg-blue-700 transition-colors font-medium flex items-center gap-1.5"
+            aria-label="Descargar cotización en PDF"
+          >
+            <Download size={16} aria-hidden="true" />
+            Descargar PDF
+          </Button>
         </div>
       </div>
 

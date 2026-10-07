@@ -4,6 +4,7 @@ import { obtenerTipoCambio } from '@/api/client';
 import { FormularioPrincipal } from './FormularioPrincipal';
 import { ResumenEnVivo } from './ResumenEnVivo';
 import { Resultados } from './Resultados';
+import { Footer } from './Footer';
 import './CalculadoraView.css';
 
 export function CalculadoraView() {
@@ -66,6 +67,8 @@ export function CalculadoraView() {
           />
         </aside>
       </div>
+
+      <Footer />
     </div>
   );
 }
