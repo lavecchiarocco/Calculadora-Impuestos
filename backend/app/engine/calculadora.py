@@ -206,8 +206,13 @@ def calcular_pequenos_envios(datos: DatosEntrada, usar_maximo: bool = True) -> R
     advertencias = list(reg_config.advertencias)
 
     # Validaciones de elegibilidad
-    if fob_usd > a_decimal(topes.limite_fob_usd):
-        motivos_no_elegible.append(f"FOB (${fob_usd} USD) supera el límite de ${topes.limite_fob_usd} USD para pequeños envíos")
+    # FOB > 400 USD → no elegible para régimen simplificado
+    if fob_usd > a_decimal(topes.franquicia_usd):
+        motivos_no_elegible.append(f"FOB (${fob_usd} USD) supera el límite de ${topes.franquicia_usd} USD para pequeños envíos")
+
+    # Envíos usados ≥ 5 → no elegible para régimen simplificado
+    if datos.envios_usados_este_anio >= topes.max_envios_por_anio:
+        motivos_no_elegible.append(f"Se alcanzó el límite de {topes.max_envios_por_anio} envíos por año para el régimen simplificado")
 
     # Validación de peso por bulto (usando el booleano)
     if datos.algun_bulto_supera_50kg:
@@ -224,27 +229,22 @@ def calcular_pequenos_envios(datos: DatosEntrada, usar_maximo: bool = True) -> R
     if datos.requiere_organismo_externo:
         motivos_no_elegible.append("El producto requiere intervención de organismo externo (ANMAT, INTI, ENACOM, SENASA)")
 
-    # Franquicia: si envios_usados >= 5, no hay franquicia
-    tiene_franquicia = datos.envios_usados_este_anio < topes.max_envios_por_anio
-
+    # Solo calcular tributos si el régimen es elegible (FOB ≤ 400 y envíos < 5)
     tributos = []
+    elegible = len(motivos_no_elegible) == 0
 
-    franquicia_usd = a_decimal(topes.franquicia_usd)
-    tributos.append(crear_tributo(
-        "Franquicia uso personal",
-        min(fob_usd, franquicia_usd) if tiene_franquicia else Decimal("0"),
-        Decimal("0"),
-        tipo_cambio,
-        a_confirmar=True,
-        tipo="informativo",
-        descripcion=(
-            f"Franquicia actual de USD {franquicia_usd} aplicada sobre FOB."
-            if tiene_franquicia
-            else "No disponible: se alcanzó el límite anual de envíos."
-        ),
-    ))
+    if elegible:
+        franquicia_usd = a_decimal(topes.franquicia_usd)
+        tributos.append(crear_tributo(
+            "Franquicia uso personal",
+            min(fob_usd, franquicia_usd),
+            Decimal("0"),
+            tipo_cambio,
+            a_confirmar=True,
+            tipo="informativo",
+            descripcion=f"Franquicia actual de USD {franquicia_usd} aplicada sobre FOB.",
+        ))
 
-    if tiene_franquicia and fob_usd <= franquicia_usd:
         # Solo IVA sobre valor total (CIF si incluir_flete_seguro_base_iva, sino FOB)
         base_iva = cif_usd if reg_config.incluir_flete_seguro_base_iva else fob_usd
         alicuota_iva, min_iva, max_iva, a_conf_iva, etiqueta_iva = get_iva(datos.ncm, usar_maximo)
@@ -260,42 +260,6 @@ def calcular_pequenos_envios(datos: DatosEntrada, usar_maximo: bool = True) -> R
             tributos.append(crear_tributo(
                 "Impuestos internos", base_iva, al_ii, tipo_cambio,
                 es_estimado_maximo=False, a_confirmar=False
-            ))
-
-    else:
-        # Sin franquicia (FOB > 400 o envios >= 5): derecho y tasa sobre excedente o total
-        base_derecho_tasa = fob_usd - franquicia_usd if (tiene_franquicia and fob_usd > franquicia_usd) else fob_usd
-        base_derecho_tasa = max(base_derecho_tasa, Decimal("0"))
-
-        # Derecho de importación
-        al_derecho, min_d, max_d, a_conf_d, etiqueta_d = get_derecho_importacion(datos.ncm, datos.derecho_importacion_pct, usar_maximo)
-        es_max_d = usar_maximo and al_derecho == max_d
-        tributos.append(crear_tributo(
-            etiqueta_d, base_derecho_tasa, al_derecho, tipo_cambio,
-            es_estimado_maximo=es_max_d, rango_min_pct=min_d, rango_max_pct=max_d, a_confirmar=a_conf_d
-        ))
-
-        # Tasa de estadística 3%
-        al_tasa, min_t, max_t, a_conf_t, etiqueta_t = get_aliquota("tasa_estadistica", usar_maximo)
-        tributos.append(crear_tributo(
-            etiqueta_t, base_derecho_tasa, al_tasa, tipo_cambio,
-            es_estimado_maximo=False, rango_min_pct=min_t, rango_max_pct=max_t, a_confirmar=a_conf_t
-        ))
-
-        # IVA sobre valor total (CIF o FOB según config)
-        base_iva = cif_usd if reg_config.iva_sobre_valor_total else fob_usd
-        al_iva, min_iva, max_iva, a_conf_iva, etiqueta_iva = get_iva(datos.ncm, usar_maximo)
-        es_max_iva = usar_maximo and al_iva == max_iva
-        tributos.append(crear_tributo(
-            etiqueta_iva, base_iva, al_iva, tipo_cambio,
-            es_estimado_maximo=es_max_iva, rango_min_pct=min_iva, rango_max_pct=max_iva, a_confirmar=a_conf_iva
-        ))
-
-        # Impuestos internos
-        if datos.impuestos_internos_pct > 0:
-            al_ii = a_decimal(datos.impuestos_internos_pct) / Decimal("100")
-            tributos.append(crear_tributo(
-                "Impuestos internos", base_iva, al_ii, tipo_cambio, a_confirmar=False
             ))
 
     tributos.append(crear_cargo_fijo(

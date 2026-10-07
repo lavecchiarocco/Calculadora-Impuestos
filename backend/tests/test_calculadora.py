@@ -104,8 +104,8 @@ class TestPequeñosEnvios:
         assert "Derecho de importación" not in " ".join(nombres)
         assert "Tasa de estadística" not in " ".join(nombres)
 
-    def test_pequenos_envios_fob_600_excedente(self):
-        """FOB USD 600 (> 400): derecho y tasa solo sobre excedente USD 200, IVA sobre total"""
+    def test_pequenos_envios_fob_600_no_elegible(self):
+        """FOB USD 600 (> 400) → no elegible en pequeños envíos"""
         datos = crear_datos_base(
             precio_producto_usd=Decimal("600"),
             costo_envio_usd=Decimal("100"),
@@ -115,62 +115,21 @@ class TestPequeñosEnvios:
         resultado = calcular_todos_regimenes(datos)
 
         pequenos = next(r for r in resultado.regímenes if r.regimen_id == "pequenos_envios")
-        conservador = pequenos.escenario_conservador
+        assert pequenos.elegibilidad.elegible is False
+        assert any("400" in m for m in pequenos.elegibilidad.motivos)
 
-        # FOB 600, franquicia 400, excedente = 200
-        # Derecho 35% sobre 200 = 70
-        # Tasa 3% sobre 200 = 6
-        # IVA 21% sobre CIF (600 + 100 = 700) = 147
-        # Total = 70 + 6 + 147 = 223
-        tributos = {t.nombre: t for t in conservador.tributos}
-
-        # Buscar derecho (puede tener nombre variable)
-        derecho = next(t for t in conservador.tributos if "Derecho" in t.nombre)
-        assert derecho.base_usd == Decimal("200")  # Solo sobre excedente
-        assert derecho.monto_usd == Decimal("70.00")
-
-        tasa = next(t for t in conservador.tributos if "Tasa" in t.nombre)
-        assert tasa.base_usd == Decimal("200")
-        assert tasa.monto_usd == Decimal("6.00")
-
-        franquicia = next(t for t in conservador.tributos if t.nombre == "Franquicia uso personal")
-        assert franquicia.base_usd == Decimal("400")
-        assert franquicia.tipo == "informativo"
-        assert not any("Arancel Único" in t.nombre for t in conservador.tributos)
-        iva = next(t for t in conservador.tributos if "IVA" in t.nombre)
-        assert iva.base_usd == Decimal("700")  # Sobre CIF total
-        assert iva.monto_usd == Decimal("147.00")
-
-        assert conservador.total_impuestos_usd == Decimal("223.00")
-
-    def test_pequenos_envios_5_envios_sin_franquicia(self):
-        """Con 5 envíos ya usados: no hay franquicia, tributa sobre total"""
+    def test_pequenos_envios_5_envios_no_elegible(self):
+        """Con 5 envíos ya usados → no elegible en pequeños envíos"""
         datos = crear_datos_base(
             precio_producto_usd=Decimal("300"),
             costo_envio_usd=Decimal("50"),
-            envios_usados_este_anio=5,  # 5 o más = sin franquicia
+            envios_usados_este_anio=5,  # 5 o más = no elegible
         )
         resultado = calcular_todos_regimenes(datos)
 
         pequenos = next(r for r in resultado.regímenes if r.regimen_id == "pequenos_envios")
-        conservador = pequenos.escenario_conservador
-
-        # Sin franquicia: derecho y tasa sobre FOB total (300)
-        # Derecho 35% * 300 = 105
-        # Tasa 3% * 300 = 9
-        # IVA 21% * CIF (350) = 73.50
-        # Total = 105 + 9 + 73.50 = 187.50
-        tributos = {t.nombre: t for t in conservador.tributos}
-
-        derecho = next(t for t in conservador.tributos if "Derecho" in t.nombre)
-        assert derecho.base_usd == Decimal("300")  # Sobre FOB total
-        assert derecho.monto_usd == Decimal("105.00")
-
-        tasa = next(t for t in conservador.tributos if "Tasa" in t.nombre)
-        assert tasa.base_usd == Decimal("300")
-        assert tasa.monto_usd == Decimal("9.00")
-
-        assert conservador.total_impuestos_usd == Decimal("187.50")
+        assert pequenos.elegibilidad.elegible is False
+        assert any("5 envíos" in m for m in pequenos.elegibilidad.motivos)
 
 
 class TestRegimenGeneral:
@@ -376,17 +335,17 @@ class TestAdvertenciasElegibilidad:
         assert courier.elegibilidad.elegible is False
         assert any("50 kg" in m for m in courier.elegibilidad.motivos)
 
-    def test_mas_de_3000_usd_pequenos_envios(self):
-        """Más de USD 3000 FOB → no elegible en pequeños envíos"""
+    def test_mas_de_400_usd_pequenos_envios(self):
+        """Más de USD 400 FOB → no elegible en pequeños envíos"""
         datos = crear_datos_base(
-            precio_producto_usd=Decimal("4000"),
-            costo_envio_usd=Decimal("200"),
+            precio_producto_usd=Decimal("410"),
+            costo_envio_usd=Decimal("50"),
         )
         resultado = calcular_todos_regimenes(datos)
 
         pequenos = next(r for r in resultado.regímenes if r.regimen_id == "pequenos_envios")
         assert pequenos.elegibilidad.elegible is False
-        assert any("3000" in m for m in pequenos.elegibilidad.motivos)
+        assert any("400" in m for m in pequenos.elegibilidad.motivos)
 
     def test_mas_de_3_unidades_misma_especie(self):
         """Más de 3 productos de la misma especie → no elegible en pequeños envíos"""

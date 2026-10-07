@@ -1,6 +1,6 @@
 import { Shield, Package, Truck, Plane, HelpCircle } from 'lucide-react';
 import type { CalculoResponse, RegimenResultado } from '@/types/api';
-import { formatearUSD, formatearARS, formatearNumero, formatearPorcentaje } from '@/utils/format';
+import { formatearUSD, formatearARS, formatearNumero, formatearPorcentaje, formatearUSDEntero, formatearARSEntero } from '@/utils/format';
 
 interface ResumenEnVivoProps {
   resultado: CalculoResponse | null;
@@ -63,6 +63,11 @@ export function ResumenEnVivo({
       : masBarato.escenario_conservador.total_impuestos_ars)
     : 0;
 
+  // Formateo para costo por unidad sin decimales innecesarios
+  const formatoMonedaUnidad = (valor: number, moneda: 'USD' | 'ARS'): string => {
+    return moneda === 'USD' ? formatearUSDEntero(valor) : formatearARSEntero(valor);
+  };
+
   // Valores de entrada en la moneda seleccionada
   const fobMoneda = moneda === 'USD' ? resultado.datos_entrada.precio_producto_usd : resultado.datos_entrada.precio_producto_usd * resultado.datos_entrada.tipo_cambio_ars_usd;
   const envioMoneda = moneda === 'USD' ? resultado.datos_entrada.costo_envio_usd : resultado.datos_entrada.costo_envio_usd * resultado.datos_entrada.tipo_cambio_ars_usd;
@@ -100,7 +105,7 @@ export function ResumenEnVivo({
             </div>
             <div className="highlight-value">{formatoMoneda(costoTotalMoneda, moneda)}</div>
             <div className="highlight-sub">{masBarato.regimen_nombre}</div>
-            <div className="highlight-sub">Costo por unidad: {formatoMoneda(costoPorUnidadMoneda, moneda)}</div>
+            <div className="highlight-sub">Costo por unidad: {formatoMonedaUnidad(costoPorUnidadMoneda, moneda)}</div>
           </div>
         )}
 

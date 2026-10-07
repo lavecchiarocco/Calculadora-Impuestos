@@ -23,6 +23,33 @@ export function formatearNumero(valor: number, decimales = 2): string {
   }).format(valor);
 }
 
+/** Formatea un número sin decimales innecesarios (ej: 100.00 → "100", 100.50 → "100,5") */
+export function formatearNumeroEntero(valor: number): string {
+  return new Intl.NumberFormat("es-AR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(valor);
+}
+
+/** Formatea moneda sin decimales innecesarios (ej: $100.00 → "$100", $100.50 → "$100,50") */
+export function formatearUSDEntero(valor: number): string {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(valor);
+}
+
+export function formatearARSEntero(valor: number): string {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(valor);
+}
+
 export function formatearPorcentaje(valor: number, decimales = 2): string {
   return `${formatearNumero(valor, decimales)}%`;
 }

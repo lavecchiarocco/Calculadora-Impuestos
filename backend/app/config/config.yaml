@@ -6,7 +6,7 @@ tipo_cambio:
 topes:
   pequenos_envios:
     franquicia_usd: 400.0
-    limite_fob_usd: 3000.0
+    limite_fob_usd: 400.0
     max_unidades_misma_especie: 3
     max_envios_por_anio: 5
     a_confirmar: true

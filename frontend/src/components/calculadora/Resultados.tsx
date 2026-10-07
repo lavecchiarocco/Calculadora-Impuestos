@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Calculator, X, Download } from 'lucide-react';
 import type { CalculoResponse, RegimenResultado } from '@/types/api';
-import { formatearUSD, formatearARS, formatearPorcentaje } from '@/utils/format';
+import { formatearUSD, formatearARS, formatearPorcentaje, formatearUSDEntero, formatearARSEntero } from '@/utils/format';
 import { Button } from '@/components/ui';
 import { descargarPDF } from '@/utils/pdf';
 
@@ -46,12 +46,13 @@ function RegimenCard({
   }, [detalleAbierto]);
 
   const monto = (usd: number, ars: number) => (moneda === 'USD' ? formatearUSD(usd) : formatearARS(ars * factor));
+  const montoUnidad = (usd: number, ars: number) => (moneda === 'USD' ? formatearUSDEntero(usd) : formatearARSEntero(ars * factor));
 
   const costoTotal = esc ? monto(esc.costo_total_puesto_pais_usd, esc.costo_total_puesto_pais_ars) : '—';
   const impuestosTotal = esc ? monto(esc.total_impuestos_usd, esc.total_impuestos_ars) : '—';
   const pctCif = esc ? formatearPorcentaje(esc.pct_sobre_cif) : '—';
   const costoPorUnidad = esc?.costo_por_unidad_usd != null
-    ? (moneda === 'USD' ? formatearUSD(esc.costo_por_unidad_usd) : formatearARS((esc.costo_por_unidad_ars ?? 0) * factor))
+    ? montoUnidad(esc.costo_por_unidad_usd, esc.costo_por_unidad_ars ?? 0)
     : '—';
 
   return (
