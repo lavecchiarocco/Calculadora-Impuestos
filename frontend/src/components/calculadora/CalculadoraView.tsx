@@ -1,14 +1,31 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useCalculadora } from '@/hooks/useCalculadora';
 import { obtenerTipoCambio } from '@/api/client';
 import { FormularioPrincipal } from './FormularioPrincipal';
 import { ResumenEnVivo } from './ResumenEnVivo';
+import { ResumenMovil } from './ResumenMovil';
 import { Resultados } from './Resultados';
 import { Footer } from './Footer';
 import './CalculadoraView.css';
 
+const BREAKPOINT_DESKTOP = 1200;
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= BREAKPOINT_DESKTOP);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  return isDesktop;
+}
+
 export function CalculadoraView() {
   const calculadora = useCalculadora();
+  const isDesktop = useIsDesktop();
 
   const [buscandoDolar, setBuscandoDolar] = useState(false);
 
@@ -25,7 +42,7 @@ export function CalculadoraView() {
   }, [calculadora.form]);
 
   return (
-    <div className="calculadora-view">
+    <div className={`calculadora-view ${calculadora.resultado ? 'tiene-resumen' : ''}`}>
       <header className="cabecera">
         <div className="cabecera-izq">
           <h1 className="cabecera-title">Calculadora de Impuestos de Importación</h1>
@@ -59,13 +76,23 @@ export function CalculadoraView() {
           />
         </main>
 
-        <aside className="resultados-panel">
-          <ResumenEnVivo
+        {isDesktop && (
+          <aside className="resultados-panel">
+            <ResumenEnVivo
+              resultado={calculadora.resultado}
+              moneda={calculadora.moneda}
+              onMonedaChange={calculadora.setMoneda}
+            />
+          </aside>
+        )}
+
+        {!isDesktop && (
+          <ResumenMovil
             resultado={calculadora.resultado}
             moneda={calculadora.moneda}
             onMonedaChange={calculadora.setMoneda}
           />
-        </aside>
+        )}
       </div>
 
       <Footer />

@@ -4,6 +4,9 @@ import type { CalculoResponse, RegimenResultado } from '@/types/api';
 import { formatearUSD, formatearARS, formatearPorcentaje, formatearUSDEntero, formatearARSEntero } from '@/utils/format';
 import { Button } from '@/components/ui';
 import { descargarPDF } from '@/utils/pdf';
+import { ComparadorRegimenes } from './ComparadorRegimenes';
+import { CascadaCostos } from './CascadaCostos';
+import { esElegible } from '@/utils/visual';
 
 interface ResultadosProps {
   resultado: CalculoResponse | null;
@@ -36,6 +39,7 @@ function RegimenCard({
   const { escenario_conservador: conservador, escenario_minimo: minimo } = regimen;
   const esc = escenarioActivo === 'conservador' ? conservador : minimo;
   const factor = 1 + sensibilidadDolar / 100;
+  const elegible = esElegible(regimen);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -56,9 +60,14 @@ function RegimenCard({
     : '—';
 
   return (
-    <article className={`regimen-card bg-white border border-surface-200 rounded-xl shadow-sm ${esMasBarato ? 'ring-2 ring-primary-500' : ''}`}>
+    <article className={`regimen-card bg-white border border-surface-200 rounded-xl shadow-sm ${esMasBarato ? 'ring-2 ring-primary-500' : ''} ${elegible ? '' : 'opacity-70'}`}>
       <header className="regimen-card-header p-5 border-b border-surface-100">
         <h3 className="font-semibold text-surface-900">{regimen.regimen_nombre}</h3>
+        {!elegible && (
+          <span className="mt-2 inline-block rounded-full bg-danger-50 px-2 py-0.5 text-caption font-medium text-danger-700">
+            No elegible: el costo no incluye impuestos
+          </span>
+        )}
       </header>
 
       <div className="regimen-card-body p-5">
@@ -305,6 +314,20 @@ export function Resultados({
               sensibilidadDolar={sensibilidadDolar}
             />
           ))}
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4">
+          <ComparadorRegimenes
+            resultado={resultado}
+            moneda={moneda}
+            sensibilidadDolar={sensibilidadDolar}
+          />
+          <CascadaCostos
+            resultado={resultado}
+            moneda={moneda}
+            escenario={escenario}
+            sensibilidadDolar={sensibilidadDolar}
+          />
         </div>
 
         <p className="disclaimer mt-4">
