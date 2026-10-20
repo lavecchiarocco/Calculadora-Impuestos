@@ -16,40 +16,13 @@ interface CascadaCostosProps {
   escenario: 'conservador' | 'minimo';
   sensibilidadDolar: number;
 }
-
-type Categoria = 'base' | 'impuesto' | 'cargo';
-
 interface Paso {
   clave: string;
   etiqueta: string;
   valor: number;
-  categoria: Categoria;
-  /** Valor estimado o a confirmar: se dibuja rayado. */
-  estimado: boolean;
   aConfirmar: boolean;
   detalle?: string;
 }
-
-const COLORES: Record<Categoria, { solido: string; rayado: string; fondo: string }> = {
-  base: {
-    solido: 'var(--color-primary-500)',
-    rayado: 'var(--color-primary-500)',
-    fondo: 'var(--color-primary-100)',
-  },
-  impuesto: {
-    solido: 'var(--color-warning-500)',
-    rayado: 'var(--color-warning-500)',
-    fondo: 'var(--color-warning-100)',
-  },
-  cargo: {
-    solido: 'var(--color-surface-400)',
-    rayado: 'var(--color-surface-400)',
-    fondo: 'var(--color-surface-100)',
-  },
-};
-
-const rayado = (color: string) =>
-  `repeating-linear-gradient(135deg, ${color} 0 4px, transparent 4px 8px)`;
 
 function escenarioActivo(
   regimen: RegimenResultado,
@@ -75,14 +48,14 @@ export function CascadaCostos({ resultado, moneda, escenario, sensibilidadDolar 
   const fmt = (valor: number) => (moneda === 'USD' ? formatearUSD(valor) : formatearARS(valor, 0));
   const desdeUsd = (usd: number) => (moneda === 'USD' ? usd : usd * tipoCambio * factor);
 
-  const { filas, total, escala } = (() => {
-    if (!esc || !regimen) return { filas: [] as (Paso & { inicio: number })[], total: 0, escala: 0 };
+  const { filas, total } = (() => {
+    if (!esc || !regimen) return { filas: [] as Paso[], total: 0 };
 
     const datos = resultado.datos_entrada;
     const pasos: Paso[] = [
-      { clave: 'fob', etiqueta: 'Producto (FOB)', valor: desdeUsd(aNumero(datos.precio_producto_usd)), categoria: 'base', estimado: false, aConfirmar: false },
-      { clave: 'envio', etiqueta: 'Envío', valor: desdeUsd(aNumero(datos.costo_envio_usd)), categoria: 'base', estimado: false, aConfirmar: false },
-      { clave: 'seguro', etiqueta: 'Seguro', valor: desdeUsd(aNumero(datos.seguro_usd)), categoria: 'base', estimado: false, aConfirmar: false },
+      { clave: 'fob', etiqueta: 'Producto (FOB)', valor: desdeUsd(aNumero(datos.precio_producto_usd)), aConfirmar: false },
+      { clave: 'envio', etiqueta: 'Envío', valor: desdeUsd(aNumero(datos.costo_envio_usd)), aConfirmar: false },
+      { clave: 'seguro', etiqueta: 'Seguro', valor: desdeUsd(aNumero(datos.seguro_usd)), aConfirmar: false },
     ];
 
     esc.tributos.forEach((tributo, index) => {
@@ -92,23 +65,14 @@ export function CascadaCostos({ resultado, moneda, escenario, sensibilidadDolar 
         clave: `tributo-${index}`,
         etiqueta: tributo.nombre,
         valor,
-        categoria: tributo.tipo === 'cargo' ? 'cargo' : 'impuesto',
-        estimado: tributo.a_confirmar || tributo.es_estimado_maximo,
         aConfirmar: tributo.a_confirmar,
         detalle: tributo.tipo === 'cargo' ? undefined : formatearPorcentaje(aNumero(tributo.alicuota_pct)),
       });
     });
 
     const visibles = pasos.filter((paso) => paso.valor > 0);
-    let acumulado = 0;
-    const conInicio = visibles.map((paso) => {
-      const inicio = acumulado;
-      acumulado += paso.valor;
-      return { ...paso, inicio };
-    });
-
     const totalBackend = costoTotalEscenario(esc, moneda, factor);
-    return { filas: conInicio, total: totalBackend, escala: Math.max(totalBackend, acumulado) };
+    return { filas: visibles, total: totalBackend };
   })();
 
   if (!regimen) return null;
@@ -179,14 +143,10 @@ export function CascadaCostos({ resultado, moneda, escenario, sensibilidadDolar 
         <>
           <ol className="mt-4 space-y-2">
             {filas.map((fila) => {
-              const izquierda = escala > 0 ? (fila.inicio / escala) * 100 : 0;
-              const ancho = escala > 0 ? Math.min(Math.max((fila.valor / escala) * 100, 1), 100 - izquierda) : 0;
-              const color = COLORES[fila.categoria];
-
               return (
                 <li
                   key={fila.clave}
-                  className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 sm:grid-cols-[12rem_1fr_7.5rem]"
+                  className="flex flex-col gap-1 rounded-lg border border-surface-100 bg-surface-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                 >
                   <span className="min-w-0 text-body-sm text-surface-700">
                     {fila.etiqueta}
@@ -197,67 +157,23 @@ export function CascadaCostos({ resultado, moneda, escenario, sensibilidadDolar 
                       </span>
                     )}
                   </span>
-                  <span className="text-right font-mono text-body-sm tabular-nums text-surface-900 sm:order-3">
+                  <span className="font-mono text-body-sm tabular-nums text-surface-900">
                     {fmt(fila.valor)}
                   </span>
-                  <div
-                    className="relative col-span-2 h-3 overflow-hidden rounded-full bg-surface-100 sm:order-2 sm:col-span-1"
-                    aria-hidden="true"
-                  >
-                    <div
-                      className="absolute inset-y-0 rounded-sm"
-                      style={{
-                        left: `${izquierda}%`,
-                        width: `${ancho}%`,
-                        ...(fila.estimado
-                          ? { backgroundColor: color.fondo, backgroundImage: rayado(color.rayado) }
-                          : { backgroundColor: color.solido }),
-                      }}
-                    />
-                  </div>
                 </li>
               );
             })}
 
-            <li className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 border-t border-surface-200 pt-3 sm:grid-cols-[12rem_1fr_7.5rem]">
+            <li className="mt-2 flex flex-col gap-1 rounded-lg border border-primary-200 bg-primary-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <span className="text-body-sm font-semibold text-surface-900">Costo total puesto en el país</span>
-              <span className="text-right font-mono text-body-sm font-semibold tabular-nums text-surface-900 sm:order-3">
+              <span className="font-mono text-body-sm font-semibold tabular-nums text-surface-900">
                 {fmt(total)}
               </span>
-              <div
-                className="col-span-2 h-3 rounded-full bg-surface-900 sm:order-2 sm:col-span-1"
-                aria-hidden="true"
-              />
             </li>
           </ol>
 
-          <div
-            className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-surface-500"
-            aria-hidden="true"
-          >
-            <Leyenda color="var(--color-primary-500)" texto="Producto y envío" />
-            <Leyenda color="var(--color-warning-500)" texto="Impuestos" />
-            <Leyenda color="var(--color-surface-400)" texto="Gastos operativos" />
-            <Leyenda color="var(--color-warning-500)" texto="Rayado: estimado o a confirmar" rayada />
-          </div>
         </>
       )}
     </section>
-  );
-}
-
-function Leyenda({ color, texto, rayada = false }: { color: string; texto: string; rayada?: boolean }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span
-        className="inline-block h-2.5 w-4 rounded-sm"
-        style={
-          rayada
-            ? { backgroundColor: 'var(--color-warning-100)', backgroundImage: rayado(color) }
-            : { backgroundColor: color }
-        }
-      />
-      {texto}
-    </span>
   );
 }

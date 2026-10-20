@@ -60,33 +60,29 @@ function RegimenCard({
     : '—';
 
   return (
-    <article className={`regimen-card bg-white border border-surface-200 rounded-xl shadow-sm ${esMasBarato ? 'ring-2 ring-primary-500' : ''} ${elegible ? '' : 'opacity-70'}`}>
+    <article className={`regimen-card bg-white border border-surface-200 rounded-xl shadow-sm ${esMasBarato ? 'ring-2 ring-primary-500' : ''} ${elegible ? '' : 'no-elegible'}`}>
+      {!elegible && <span className="regimen-card-ribbon">No elegible</span>}
       <header className="regimen-card-header p-5 border-b border-surface-100">
         <h3 className="font-semibold text-surface-900">{regimen.regimen_nombre}</h3>
-        {!elegible && (
-          <span className="mt-2 inline-block rounded-full bg-danger-50 px-2 py-0.5 text-caption font-medium text-danger-700">
-            No elegible: el costo no incluye impuestos
-          </span>
-        )}
       </header>
 
       <div className="regimen-card-body p-5">
         <dl className="grid grid-cols-1 gap-3">
-          <div className="regimen-card-metric flex min-w-0 flex-col">
-            <dt className="w-full text-right text-caption text-surface-500">Costo total</dt>
-            <dd className="w-full max-w-full break-words text-right font-mono tabular-nums text-surface-900 text-base font-semibold">{costoTotal}</dd>
+          <div className="regimen-card-metric regimen-card-total min-w-0">
+            <dt className="text-caption text-surface-500">Costo total</dt>
+            <dd className="w-full max-w-full break-words font-mono tabular-nums text-surface-900 text-base font-semibold">{costoTotal}</dd>
           </div>
-          <div className="regimen-card-metric flex min-w-0 flex-col">
-            <dt className="w-full text-right text-caption text-surface-500">Impuestos</dt>
-            <dd className="w-full max-w-full break-words text-right font-mono tabular-nums text-surface-900 text-base font-semibold">{impuestosTotal}</dd>
+          <div className="regimen-card-metric min-w-0">
+            <dt className="text-caption text-surface-500">Impuestos</dt>
+            <dd className="w-full max-w-full break-words font-mono tabular-nums text-surface-900 text-base font-semibold">{impuestosTotal}</dd>
           </div>
-          <div className="regimen-card-metric flex min-w-0 flex-col">
-            <dt className="w-full text-right text-caption text-surface-500">% sobre CIF</dt>
-            <dd className="w-full max-w-full break-words text-right font-mono tabular-nums text-surface-900 text-base font-semibold">{pctCif}</dd>
+          <div className="regimen-card-metric min-w-0">
+            <dt className="text-caption text-surface-500">% sobre CIF</dt>
+            <dd className="w-full max-w-full break-words font-mono tabular-nums text-surface-900 text-base font-semibold">{pctCif}</dd>
           </div>
-          <div className="regimen-card-metric flex min-w-0 flex-col">
-            <dt className="w-full text-right text-caption text-surface-500">Costo por unidad</dt>
-            <dd className="w-full max-w-full break-words text-right font-mono tabular-nums text-surface-900 text-base font-semibold">{costoPorUnidad}</dd>
+          <div className="regimen-card-metric min-w-0">
+            <dt className="text-caption text-surface-500">Costo por unidad</dt>
+            <dd className="w-full max-w-full break-words font-mono tabular-nums text-surface-900 text-base font-semibold">{costoPorUnidad}</dd>
           </div>
         </dl>
         <Button
@@ -333,6 +329,7 @@ export function Resultados({
         <p className="disclaimer mt-4">
           <strong>⚠ Estimación aproximada.</strong> No sustituye asesoramiento aduanero profesional.
           Verifique vigencia de regímenes con su courier/despachante.
+          Las alícuotas marcadas <span className="badge-warning">A CONFIRMAR</span> dependen de la clasificación aduanera final.
         </p>
       </div>
     </div>

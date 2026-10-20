@@ -26,9 +26,6 @@ interface Fila {
   esMasBarato: boolean;
 }
 
-const rayado = (color: string) =>
-  `repeating-linear-gradient(135deg, ${color} 0 4px, transparent 4px 8px)`;
-
 export function ComparadorRegimenes({ resultado, moneda, sensibilidadDolar }: ComparadorRegimenesProps) {
   const factor = 1 + sensibilidadDolar / 100;
   const masBaratoId = resultado.regimen_mas_barato_elegible;
@@ -55,7 +52,6 @@ export function ComparadorRegimenes({ resultado, moneda, sensibilidadDolar }: Co
   );
 
   const elegibles = filas.filter((f) => f.elegible);
-  const escala = Math.max(...elegibles.map((f) => f.maximo), 0);
 
   // Ahorro del más barato frente a la siguiente mejor opción elegible (escenario conservador).
   const ganador = filas.find((f) => f.esMasBarato);
@@ -83,7 +79,7 @@ export function ComparadorRegimenes({ resultado, moneda, sensibilidadDolar }: Co
             {nombreCorto(siguiente.nombre)} (escenario conservador).
           </>
         ) : (
-          'Cada barra va desde el escenario mínimo hasta el conservador.'
+          'Compará el costo estimado de cada régimen.'
         )}
       </p>
 
@@ -98,17 +94,14 @@ export function ComparadorRegimenes({ resultado, moneda, sensibilidadDolar }: Co
         </ul>
       )}
 
-      <ul className="mt-3">
-        {filas.map((fila, index) => {
-          const pctMin = escala > 0 ? (fila.minimo / escala) * 100 : 0;
-          const pctRango = escala > 0 ? ((fila.maximo - fila.minimo) / escala) * 100 : 0;
+      <ul className="mt-3 space-y-2">
+        {filas.map((fila) => {
           const hayRango = fila.maximo - fila.minimo >= 0.5;
-          const colorSolido = fila.esMasBarato ? 'bg-success-500' : 'bg-primary-500';
-          const colorRayado = fila.esMasBarato ? 'var(--color-success-400)' : 'var(--color-primary-300)';
 
           return (
-            <li key={fila.id} className={`py-3 ${index > 0 ? 'border-t border-surface-100' : ''}`}>
-              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <li key={fila.id} className={`comparador-regimen-fila ${fila.elegible ? '' : 'no-elegible'} ${fila.esMasBarato ? 'mas-barato' : ''}`}>
+              {!fila.elegible && <span className="comparador-regimen-cinta">No elegible</span>}
+              <div className="comparador-regimen-encabezado">
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <span className="font-medium text-surface-900">{fila.nombre}</span>
                   {fila.esMasBarato && (
@@ -116,14 +109,9 @@ export function ComparadorRegimenes({ resultado, moneda, sensibilidadDolar }: Co
                       Más barato
                     </span>
                   )}
-                  {!fila.elegible && (
-                    <span className="rounded-full bg-danger-50 px-2 py-0.5 text-caption font-medium text-danger-700">
-                      No elegible
-                    </span>
-                  )}
                 </div>
                 {fila.elegible && (
-                  <span className="font-mono text-body-sm tabular-nums text-surface-900">
+                  <span className="comparador-regimen-costo font-mono text-body-sm tabular-nums text-surface-900">
                     {hayRango
                       ? `${formatearMontoCorto(fila.minimo, moneda)} – ${formatearMontoCorto(fila.maximo, moneda)}`
                       : formatearMontoCorto(fila.maximo, moneda)}
@@ -131,25 +119,7 @@ export function ComparadorRegimenes({ resultado, moneda, sensibilidadDolar }: Co
                 )}
               </div>
 
-              {fila.elegible ? (
-                <div
-                  className="relative mt-2 h-3 w-full overflow-hidden rounded-full bg-surface-100"
-                  aria-hidden="true"
-                >
-                  <div
-                    className={`absolute inset-y-0 left-0 ${colorSolido}`}
-                    style={{ width: `${pctMin}%` }}
-                  />
-                  <div
-                    className="absolute inset-y-0"
-                    style={{
-                      left: `${pctMin}%`,
-                      width: `${pctRango}%`,
-                      backgroundImage: rayado(colorRayado),
-                    }}
-                  />
-                </div>
-              ) : (
+              {!fila.elegible && (
                 <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-body-sm text-danger-700">
                   {fila.motivos.map((motivo) => (
                     <li key={motivo}>{motivo}</li>
@@ -161,19 +131,6 @@ export function ComparadorRegimenes({ resultado, moneda, sensibilidadDolar }: Co
         })}
       </ul>
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-surface-500" aria-hidden="true">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-4 rounded-sm bg-primary-500" />
-          Escenario mínimo
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            className="inline-block h-2.5 w-4 rounded-sm"
-            style={{ backgroundImage: rayado('var(--color-primary-300)'), backgroundColor: 'var(--color-surface-100)' }}
-          />
-          Hasta el escenario conservador
-        </span>
-      </div>
     </section>
   );
 }

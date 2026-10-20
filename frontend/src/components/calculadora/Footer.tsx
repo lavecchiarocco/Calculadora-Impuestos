@@ -1,7 +1,20 @@
 import { useState } from 'react';
+import { MessageCircle, X } from 'lucide-react';
+import { useForm, ValidationError } from '@formspree/react';
 
 export function Footer() {
   const [showTerms, setShowTerms] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackType, setFeedbackType] = useState('Error encontrado');
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [state, handleSubmit, resetForm] = useForm('xrpevore');
+
+  const closeFeedback = () => {
+    setShowFeedback(false);
+    setFeedbackMessage('');
+    setFeedbackType('Error encontrado');
+    resetForm();
+  };
 
   return (
     <footer className="footer">
@@ -106,6 +119,104 @@ export function Footer() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        className="feedback-fab"
+        onClick={() => {
+          resetForm();
+          setFeedbackMessage('');
+          setFeedbackType('Error encontrado');
+          setShowFeedback(true);
+        }}
+        aria-label="Enviar un comentario o sugerencia"
+      >
+        <MessageCircle size={22} aria-hidden="true" />
+        <span>Dejar un mensaje</span>
+      </button>
+
+      {showFeedback && (
+        <div
+          className="modal-overlay feedback-overlay"
+          onClick={closeFeedback}
+          role="presentation"
+        >
+          <section
+            className="modal-content feedback-modal"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-title"
+          >
+            <header className="modal-header">
+              <div>
+                <h2 id="feedback-title" className="modal-title">¿Qué podemos mejorar?</h2>
+                <p className="feedback-description">Contanos si encontraste un error o tenés una idea para la calculadora.</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={closeFeedback}
+                aria-label="Cerrar formulario de comentarios"
+              >
+                <X size={20} aria-hidden="true" />
+              </button>
+            </header>
+            {state.succeeded ? (
+              <div className="modal-body feedback-success" role="status" aria-live="polite">
+                <div className="feedback-success-icon" aria-hidden="true">✓</div>
+                <h3>¡Gracias por tu mensaje!</h3>
+                <p>Tu comentario fue enviado. Nos ayuda a mejorar la calculadora.</p>
+                <button type="button" className="feedback-submit" onClick={closeFeedback}>Cerrar</button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <div className="modal-body feedback-body">
+                  <input type="hidden" name="_subject" value={`[Calculadora] ${feedbackType}`} />
+                  <label className="feedback-label" htmlFor="feedback-type">Tipo de mensaje</label>
+                  <select
+                    id="feedback-type"
+                    className="feedback-input"
+                    name="tipo"
+                    value={feedbackType}
+                    onChange={(event) => setFeedbackType(event.target.value)}
+                  >
+                    <option>Error encontrado</option>
+                    <option>Funcionalidad para implementar</option>
+                    <option>Idea o sugerencia</option>
+                    <option>Otro</option>
+                  </select>
+
+                  <label className="feedback-label" htmlFor="feedback-message">Tu mensaje</label>
+                  <textarea
+                    id="feedback-message"
+                    className="feedback-input feedback-textarea"
+                    name="message"
+                    value={feedbackMessage}
+                    onChange={(event) => setFeedbackMessage(event.target.value)}
+                    placeholder="Escribí tu comentario..."
+                    maxLength={2000}
+                    required
+                    rows={5}
+                  />
+                  <ValidationError field="message" errors={state.errors} className="feedback-error" />
+                  <ValidationError errors={state.errors} className="feedback-error" />
+                  <p className="feedback-hint">El mensaje se enviará de forma segura mediante Formspree.</p>
+                </div>
+                <footer className="modal-footer">
+                  <button type="button" className="feedback-cancel" onClick={closeFeedback}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="feedback-submit" disabled={state.submitting || !feedbackMessage.trim()}>
+                    <MessageCircle size={17} aria-hidden="true" />
+                    {state.submitting ? 'Enviando…' : 'Enviar mensaje'}
+                  </button>
+                </footer>
+              </form>
+            )}
+          </section>
         </div>
       )}
     </footer>

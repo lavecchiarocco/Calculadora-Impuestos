@@ -72,11 +72,6 @@ export function ResumenContenido({ resumen, datosEntrada }: ResumenContenidoProp
         </dl>
       </div>
 
-      <p className="disclaimer">
-        Estimación orientativa. Las alícuotas marcadas
-        <span className="badge-warning">A CONFIRMAR</span> dependen de la
-        clasificación aduanera final.
-      </p>
     </>
   );
 }
