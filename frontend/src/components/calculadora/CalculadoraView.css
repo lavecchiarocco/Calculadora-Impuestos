@@ -2,8 +2,169 @@
 
 .calculadora-view {
   min-height: 100vh;
-  background: var(--color-surface-200);
+  background: var(--color-surface-50);
   color: var(--color-surface-900);
+}
+
+.calculator-app-nav {
+  position: sticky;
+  top: 0;
+  z-index: 250;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem max(1.5rem, calc((100vw - 80rem) / 2));
+  background: rgb(255 255 255 / 96%);
+  border-bottom: 1px solid var(--color-surface-200);
+}
+
+.calculator-app-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--color-surface-900);
+  text-decoration: none;
+  font-size: 1.1rem;
+  font-weight: 750;
+  letter-spacing: -0.04em;
+}
+
+.calculator-app-brand img {
+  display: block;
+  width: auto;
+  height: 32px;
+}
+
+.calculator-app-brand > span:last-child > span {
+  color: #2563eb;
+}
+
+.calculator-app-brand .landing-brand-mark {
+  width: 29px;
+  height: 29px;
+  display: flex;
+  align-items: end;
+  gap: 3px;
+  padding: 5px;
+  border-radius: 9px;
+  background: #10213c;
+}
+
+.calculator-app-brand .landing-brand-mark span {
+  flex: 1;
+  border-radius: 2px;
+  background: #60a5fa;
+}
+
+.calculator-app-brand .landing-brand-mark span:nth-child(1) { height: 45%; }
+.calculator-app-brand .landing-brand-mark span:nth-child(2) { height: 70%; }
+.calculator-app-brand .landing-brand-mark span:nth-child(3) { height: 100%; }
+
+.calculator-app-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #52627b;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: color 150ms ease;
+}
+
+.calculator-app-home:hover { color: var(--color-primary-600); }
+
+.calculator-page {
+  min-height: calc(100vh - 60px);
+  padding: 3.5rem max(1.25rem, calc((100vw - 80rem) / 2));
+  scroll-margin-top: 82px;
+}
+
+.calculator-hero {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto 2.5rem;
+  padding: 3.5rem 2rem;
+  overflow: hidden;
+  border-radius: 20px;
+  background: radial-gradient(ellipse at 92% 0%, hsl(221 83% 53% / 25%), transparent 42%), var(--color-primary-950);
+  text-align: center;
+}
+
+.calculator-hero-watermark {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  right: 3.5rem;
+  width: 340px;
+  height: 340px;
+  transform: translateY(-50%);
+  opacity: 0.07;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.calculator-hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.calculator-hero-eyebrow {
+  color: var(--color-primary-200);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.calculator-hero h1 {
+  margin: 0.85rem 0 0.75rem;
+  color: #fff;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.calculator-hero p {
+  max-width: 640px;
+  margin: 0 auto;
+  color: var(--color-primary-100);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.calculator-page .layout {
+  padding: 0;
+  max-width: 80rem;
+}
+
+.calculator-page .formulario-principal,
+.calculator-page .resultados-panel .panel-card {
+  border-color: var(--color-surface-200);
+  box-shadow: var(--shadow-shadow-md);
+}
+
+.calculator-results-anchor { scroll-margin-top: 1.5rem; }
+
+@media (max-width: 767px) {
+  .calculator-page { padding: 2.25rem 1rem; }
+  .calculator-hero {
+    margin-bottom: 2rem;
+    padding: 36px 20px;
+  }
+  .calculator-hero-watermark {
+    right: 0.5rem;
+    width: 200px;
+    height: 200px;
+  }
+}
+
+@media (max-width: 680px) {
+  .calculator-app-nav { padding: 0.75rem 1rem; }
+  .calculator-page .layout { gap: 1rem; }
 }
 
 /* === Cabecera === */
@@ -118,15 +279,15 @@
 
 .calculadora-view .formulario-principal {
   background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
+  border: 1px solid var(--color-surface-200);
+  border-radius: var(--radius-radius-xl);
+  box-shadow: var(--shadow-shadow-sm);
   overflow: hidden;
 }
 
-.calculadora-view .field-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px #3b82f6;
+.calculadora-view .field-input:focus-visible {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px hsl(221 83% 53% / 20%);
   outline: none;
 }
 
@@ -153,20 +314,23 @@
   padding: 1.5rem;
 }
 
-.field-group {
-  margin-bottom: 1.5rem;
+.calculator-page .field-group {
+  margin-bottom: 2rem;
+  padding: 0;
+  border: 0;
 }
 
-.field-group:last-child {
+.calculator-page .field-group:last-child {
   margin-bottom: 0;
 }
 
-.fieldset-legend {
+.calculator-page .fieldset-legend {
   font-size: var(--text-body-sm);
   font-weight: 600;
   color: var(--color-surface-700);
   margin-bottom: 0.75rem;
   display: block;
+  padding: 0;
 }
 
 .grid {
@@ -376,16 +540,56 @@
 
 /* Botones */
 
-.formulario-actions {
+.calculator-page .formulario-actions {
   display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--color-surface-200);
 }
 
-.formulario-actions .btn {
-  flex: 1;
+.calculator-page .formulario-actions .btn {
+  min-height: 44px;
+}
+
+.calculator-page .formulario-actions .calculator-calculate-button {
+  order: 1;
+  flex: 1 1 12rem;
+  min-height: 48px;
+}
+
+.calculator-page .formulario-actions .calculator-reset-button {
+  order: 0;
+  flex: 1 1 10rem;
+}
+
+.calculator-page .formulario-actions .calculator-example-button {
+  order: 2;
+  flex: 0 1 auto;
+}
+
+.calculator-page .btn-dolar {
+  width: 40px;
+  height: 40px;
+}
+
+.calculator-page .moneda-btn,
+.calculator-page .escenario-btn {
+  min-height: 40px;
+}
+
+.calculator-page .estado-vacio {
+  border: 1px dashed var(--color-surface-300);
+  border-radius: var(--radius-radius-xl);
+  background: white;
+}
+
+@media (max-width: 639px) {
+  .calculator-page .formulario-body { padding: 1rem; }
+  .calculator-page .formulario-actions { flex-direction: column; }
+  .calculator-page .formulario-actions .btn { width: 100%; }
 }
 
 /* Checkbox estilo */
@@ -1183,7 +1387,7 @@
 .acordeon-header-line-1 h3 {
   font-weight: 600;
   color: var(--color-surface-900);
-  truncate: true;
+  translate: true;
 }
 
 .acordeon-header-line-2 {
@@ -1376,8 +1580,8 @@
   color: var(--color-surface-500);
 }
 
-.estado-vacio svg {
-  color: #3b82f6;
+.calculator-page .estado-vacio svg {
+  color: var(--color-primary-500);
 }
 
 .estado-vacio p {

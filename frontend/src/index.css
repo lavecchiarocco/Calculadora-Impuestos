@@ -189,14 +189,6 @@
     -moz-appearance: textfield;
   }
 
-  input[type="number"]:hover::-webkit-inner-spin-button,
-  input[type="number"]:hover::-webkit-outer-spin-button,
-  input[type="number"]:focus::-webkit-inner-spin-button,
-  input[type="number"]:focus::-webkit-outer-spin-button {
-    -webkit-appearance: auto;
-    opacity: 0.5;
-  }
-
   input[type="range"] {
     -webkit-appearance: none;
     appearance: none;

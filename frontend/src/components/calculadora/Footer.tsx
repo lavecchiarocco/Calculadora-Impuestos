@@ -1,32 +1,39 @@
 import { useState } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import { useForm, ValidationError } from '@formspree/react';
+import logoHorizontalColor from '@/assets/totalimport-logos/svg/logo-horizontal.svg';
 
 export function Footer() {
   const [showTerms, setShowTerms] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [feedbackType, setFeedbackType] = useState('Error encontrado');
+  const [feedbackType, setFeedbackType] = useState('Idea o sugerencia');
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [state, handleSubmit, resetForm] = useForm('xrpevore');
 
   const closeFeedback = () => {
     setShowFeedback(false);
     setFeedbackMessage('');
-    setFeedbackType('Error encontrado');
+    setFeedbackType('Idea o sugerencia');
     resetForm();
   };
 
   return (
     <footer className="footer">
       <div className="footer-content">
+        <div className="landing-footer-main">
+          <a className="landing-brand" href="/#inicio" aria-label="TotalImport, volver al inicio">
+            <img src={logoHorizontalColor} alt="TotalImport" />
+          </a>
+          <nav className="landing-footer-links" aria-label="Enlaces del pie de página">
+            <a href="/calculadora">Calculadora</a>
+            <a href="/#como-funciona">Cómo funciona</a>
+            <a href="/#preguntas">Preguntas frecuentes</a>
+          </nav>
+          <p className="landing-footer-disclaimer">Los resultados son estimativos y no reemplazan la consulta con un profesional.</p>
+        </div>
         <p className="footer-text">
-          Al usar esta herramienta aceptás los
-          <button
-            type="button"
-            className="footer-terms-link"
-            onClick={() => setShowTerms(true)}
-            aria-label="Ver términos y condiciones"
-          >
+          Al usar esta herramienta aceptás los{' '}
+          <button type="button" className="footer-terms-link" onClick={() => setShowTerms(true)} aria-label="Ver términos y condiciones">
             Términos y condiciones
           </button>
         </p>
@@ -128,7 +135,7 @@ export function Footer() {
         onClick={() => {
           resetForm();
           setFeedbackMessage('');
-          setFeedbackType('Error encontrado');
+          setFeedbackType('Idea o sugerencia');
           setShowFeedback(true);
         }}
         aria-label="Enviar un comentario o sugerencia"

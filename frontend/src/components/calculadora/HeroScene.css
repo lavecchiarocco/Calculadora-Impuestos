@@ -1,0 +1,364 @@
+.landing-hero .landing-hero-art {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 460px;
+  place-items: center;
+  overflow: visible;
+  perspective: 1100px;
+}
+
+.hero-ticket-backdrop {
+  position: absolute;
+  inset: -8% -5%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hero-ticket-backdrop-elements { position: absolute; inset: 0; }
+.hero-backdrop-depth { position: absolute; inset: 0; }
+.landing-hero-copy { animation: none !important; }
+
+.hero-backdrop-grid {
+  position: absolute;
+  inset: 5%;
+  opacity: .28;
+  background-image:
+    linear-gradient(hsl(221 83% 53% / .08) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(221 83% 53% / .08) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(ellipse, #000 8%, transparent 70%);
+}
+
+.hero-backdrop-route {
+  position: absolute;
+  inset: 2% 0 0 4%;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  opacity: .19;
+  animation: hero-backdrop-drift var(--hero-backdrop-route-duration) ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+
+.hero-backdrop-route path,
+.hero-backdrop-route circle {
+  stroke: var(--color-primary-600);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 8;
+  stroke-linecap: round;
+}
+
+.hero-backdrop-route circle { fill: var(--color-primary-500); }
+
+.hero-backdrop-plane {
+  position: absolute;
+  top: 4%;
+  left: 5%;
+  width: 92px;
+  opacity: .2;
+  animation: hero-backdrop-plane-drift var(--hero-backdrop-plane-duration) ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+
+.hero-backdrop-plane path:first-child {
+  stroke: var(--color-primary-500);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 5;
+}
+
+.hero-backdrop-plane path:last-child {
+  fill: var(--color-primary-600);
+  stroke: var(--color-primary-800);
+  stroke-width: 1;
+}
+
+.hero-backdrop-globe {
+  position: absolute;
+  top: 8%;
+  right: 5%;
+  width: 42px;
+  opacity: .12;
+}
+
+.hero-backdrop-package {
+  position: absolute;
+  width: 27px;
+  height: 24px;
+  border: 1px solid var(--color-primary-500);
+  background: var(--color-primary-100);
+  opacity: .23;
+  animation: hero-backdrop-package-drift var(--hero-backdrop-package-duration) ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+
+.hero-backdrop-package::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  content: '';
+  background: var(--color-primary-500);
+}
+
+.hero-backdrop-package-one { right: 1%; bottom: 34%; }
+.hero-backdrop-package-two { left: 3%; bottom: 22%; animation-delay: -4s; transform: scale(.7); }
+
+.hero-backdrop-ship {
+  position: absolute;
+  right: 0;
+  bottom: -1%;
+  width: 140px;
+  opacity: .2;
+  animation: hero-backdrop-drift var(--hero-backdrop-ship-duration) ease-in-out infinite alternate-reverse;
+  animation-play-state: paused;
+}
+
+.hero-backdrop-ship path:first-child {
+  fill: var(--color-primary-800);
+  stroke: var(--color-primary-900);
+}
+
+.hero-backdrop-ship path:nth-child(2) {
+  fill: var(--color-primary-300);
+  stroke: var(--color-primary-600);
+}
+
+.hero-backdrop-ship path:last-child {
+  stroke: var(--color-primary-500);
+  stroke-width: 1.4;
+}
+
+.hero-ticket {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 490px);
+  padding: 1.2rem 1.3rem 1rem;
+  border: 2px solid var(--color-primary-950);
+  border-radius: 12px;
+  background: white;
+  box-shadow: 9px 10px 0 var(--color-primary-950);
+  color: var(--color-surface-900);
+  transform-style: preserve-3d;
+}
+
+.hero-ticket-header {
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: 0 0 .9rem;
+  border-bottom: 1px dashed var(--color-surface-300);
+  color: var(--color-surface-700);
+  font: 600 .62rem/1.4 var(--font-family-mono);
+  letter-spacing: .025em;
+}
+
+.hero-ticket-header b { color: var(--color-primary-600); }
+
+.hero-ticket-route {
+  position: relative;
+  height: 92px;
+  margin: .25rem 0 .1rem;
+}
+
+.hero-ticket-route svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.hero-ticket-route-path {
+  stroke: var(--color-primary-400);
+  stroke-width: 2;
+  stroke-dasharray: 3 7;
+  stroke-linecap: round;
+}
+
+.hero-ticket-route circle {
+  fill: var(--color-primary-600);
+  stroke: white;
+  stroke-width: 3;
+}
+
+.hero-ticket-package path:first-child {
+  fill: var(--color-primary-500);
+  stroke: var(--color-primary-800);
+  stroke-width: 1;
+}
+
+.hero-ticket-package path:last-child {
+  stroke: white;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hero-ticket-origin,
+.hero-ticket-destination {
+  position: absolute;
+  z-index: 1;
+  color: var(--color-primary-700);
+  font: 700 .58rem var(--font-family-mono);
+}
+
+.hero-ticket-origin { left: 0; bottom: 3px; }
+.hero-ticket-destination { top: 2px; right: 0; }
+
+.hero-ticket-stamp {
+  position: absolute;
+  z-index: 2;
+  top: -27px;
+  right: -35px;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .45rem .7rem;
+  border: 3px double color-mix(in srgb, var(--color-primary-600) 90%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-primary-600) 90%, transparent);
+  font: 800 1.22rem/1 var(--font-family-mono);
+  letter-spacing: .09em;
+  white-space: nowrap;
+  transform: rotate(-12deg);
+}
+
+.hero-ticket-costs {
+  display: grid;
+  gap: .48rem;
+  margin: 0;
+  padding: .85rem 0;
+  border-top: 1px dashed var(--color-surface-300);
+  border-bottom: 1px solid var(--color-primary-950);
+}
+
+.hero-ticket-cost-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--color-surface-700);
+  font-size: .76rem;
+}
+
+.hero-ticket-cost-row dt { margin: 0; }
+.hero-ticket-cost-row dd {
+  margin: 0;
+  color: var(--color-surface-900);
+  font: 600 .74rem var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-ticket-total {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: .8rem;
+  padding-top: .85rem;
+}
+
+.hero-ticket-total > span {
+  max-width: 140px;
+  color: var(--color-surface-600);
+  font-size: .62rem;
+  font-weight: 750;
+  letter-spacing: .06em;
+  line-height: 1.4;
+}
+
+.hero-ticket-total-amount {
+  color: var(--color-primary-950);
+  font: 800 clamp(1.1rem, 2.3vw, 1.55rem)/1 var(--font-family-mono);
+  letter-spacing: -.06em;
+  white-space: nowrap;
+}
+
+.hero-ticket-caption {
+  margin: .6rem 0 0;
+  color: var(--color-surface-500);
+  font-size: .62rem;
+  text-align: right;
+}
+
+.landing-hero-marquee {
+  --hero-marquee-duration: 38s;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  overflow: hidden;
+  background: var(--color-primary-950);
+  color: white;
+}
+
+.hero-marquee-viewport { overflow: hidden; }
+.hero-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: hero-marquee-scroll var(--hero-marquee-duration) linear infinite;
+}
+
+.hero-marquee-group {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-around;
+  min-width: 100vw;
+  gap: 1.5rem;
+  padding: .95rem 1.5rem;
+}
+
+.hero-marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.5rem;
+  color: var(--color-surface-50);
+  font-size: clamp(1.4rem, 2vw, 1.7rem);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hero-marquee-item b { color: var(--color-primary-300); font-size: .75rem; }
+.hero-ticket-loading { min-height: 460px; }
+
+.landing-hero.is-ticket-visible .hero-backdrop-route,
+.landing-hero.is-ticket-visible .hero-backdrop-plane,
+.landing-hero.is-ticket-visible .hero-backdrop-package,
+.landing-hero.is-ticket-visible .hero-backdrop-ship,
+.landing-hero.is-ticket-visible .landing-scroll-cue span { animation-play-state: running; }
+
+@keyframes hero-marquee-scroll { to { transform: translateX(-50%); } }
+@keyframes hero-backdrop-drift { to { transform: translate3d(var(--hero-backdrop-drift-x), var(--hero-backdrop-drift-y), 0); } }
+@keyframes hero-backdrop-plane-drift { to { transform: translate3d(var(--hero-backdrop-plane-drift-x), var(--hero-backdrop-plane-drift-y), 0); } }
+@keyframes hero-backdrop-package-drift { to { transform: translate3d(0, var(--hero-backdrop-package-drift-y), 0); } }
+
+@media (max-width: 900px) {
+  .landing-hero .landing-hero-art { min-height: 430px; }
+  .hero-ticket { width: min(100%, 460px); }
+}
+
+@media (max-width: 680px) {
+  .landing-hero .landing-hero-art { min-height: 0; margin: 1.5rem 0 1.2rem; padding: .5rem .45rem .7rem; }
+  .hero-ticket { width: 100%; padding: 1rem 1rem .85rem; border-radius: 10px; box-shadow: 6px 7px 0 var(--color-primary-950); }
+  .hero-ticket-header { font-size: .55rem; }
+  .hero-ticket-route { height: 76px; }
+  .hero-ticket-costs { gap: .4rem; padding: .7rem 0; }
+  .hero-ticket-cost-row { font-size: .72rem; }
+  .hero-ticket-total-amount { font-size: clamp(1.05rem, 5vw, 1.35rem); }
+  .hero-backdrop-plane { top: 0; left: auto; right: 4%; width: 62px; }
+  .hero-backdrop-globe, .hero-backdrop-ship, .hero-backdrop-package-two { display: none; }
+  .hero-backdrop-package-one { right: 0; bottom: 22%; transform: scale(.72); }
+  .hero-backdrop-grid { opacity: .2; }
+  .hero-marquee-group { gap: 1rem; padding: .82rem 1rem; }
+  .hero-ticket-stamp { top: -17px; right: -6px; padding: .35rem .5rem; font-size: .9rem; }
+  .hero-marquee-item { gap: 1rem; font-size: 1.15rem; }
+}
+
+.landing-hero-marquee:hover .hero-marquee-track { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-backdrop-route, .hero-backdrop-plane, .hero-backdrop-package, .hero-backdrop-ship, .hero-marquee-track, .landing-scroll-cue span { animation: none !important; }
+  .hero-marquee-track { transform: none; }
+}

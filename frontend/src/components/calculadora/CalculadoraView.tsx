@@ -1,4 +1,5 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { useCalculadora } from '@/hooks/useCalculadora';
 import { obtenerTipoCambio } from '@/api/client';
 import { FormularioPrincipal } from './FormularioPrincipal';
@@ -6,6 +7,8 @@ import { ResumenEnVivo } from './ResumenEnVivo';
 import { ResumenMovil } from './ResumenMovil';
 import { Resultados } from './Resultados';
 import { Footer } from './Footer';
+import logoHorizontalColor from '@/assets/totalimport-logos/svg/logo-horizontal.svg';
+import isotipoBlanco from '@/assets/totalimport-logos/svg/isotipo-blanco.svg';
 import './CalculadoraView.css';
 
 const BREAKPOINT_DESKTOP = 1200;
@@ -28,6 +31,24 @@ export function CalculadoraView() {
   const isDesktop = useIsDesktop();
 
   const [buscandoDolar, setBuscandoDolar] = useState(false);
+  const [solicitandoCalculo, setSolicitandoCalculo] = useState(false);
+  const resultadosRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!solicitandoCalculo || calculadora.cargando) return;
+    if (calculadora.error) {
+      setSolicitandoCalculo(false);
+      return;
+    }
+    if (!calculadora.resultado) return;
+    resultadosRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setSolicitandoCalculo(false);
+  }, [calculadora.resultado, calculadora.cargando, calculadora.error, solicitandoCalculo]);
+
+  const handleCalcular = useCallback(async () => {
+    await calculadora.ejecutarCalculo();
+    setSolicitandoCalculo(true);
+  }, [calculadora.ejecutarCalculo]);
 
   const handleBuscarDolar = useCallback(async () => {
     setBuscandoDolar(true);
@@ -43,13 +64,22 @@ export function CalculadoraView() {
 
   return (
     <div className={`calculadora-view ${calculadora.resultado ? 'tiene-resumen' : ''}`}>
-      <header className="cabecera">
-        <div className="cabecera-izq">
-          <h1 className="cabecera-title">Calculadora de Impuestos de Importación</h1>
-          <p className="cabecera-subtitle">Estimá cuánto pagarías de impuestos al importar</p>
-        </div>
+      <header className="calculator-app-nav">
+        <a className="calculator-app-brand" href="/" aria-label="TotalImport, volver a la landing">
+          <img src={logoHorizontalColor} alt="TotalImport" height={32} />
+        </a>
+        <a className="calculator-app-home" href="/#inicio"><ArrowLeft size={16} aria-hidden="true" />Volver al inicio</a>
       </header>
 
+      <section className="calculator-page" id="calculadora" aria-labelledby="calculator-title">
+      <div className="calculator-hero">
+        <img className="calculator-hero-watermark" src={isotipoBlanco} alt="" aria-hidden="true" />
+        <div className="calculator-hero-content">
+          <span className="calculator-hero-eyebrow">Calculadora de importación</span>
+          <h1 id="calculator-title">Estimá los costos de tu operación</h1>
+          <p>Ingresá los datos de tu compra para calcular una estimación y comparar los regímenes disponibles.</p>
+        </div>
+      </div>
       <div className="layout">
         <main className="formulario-panel">
           <FormularioPrincipal
@@ -57,6 +87,8 @@ export function CalculadoraView() {
             disabled={calculadora.cargandoDolarInicial}
             onBuscarDolar={handleBuscarDolar}
             buscandoDolar={buscandoDolar || calculadora.cargandoDolarInicial}
+            onCalcular={handleCalcular}
+            calculando={calculadora.cargando}
           />
 
           {calculadora.error && (
@@ -65,6 +97,7 @@ export function CalculadoraView() {
             </div>
           )}
 
+          <div ref={resultadosRef} className="calculator-results-anchor">
           <Resultados
             resultado={calculadora.resultado}
             moneda={calculadora.moneda}
@@ -74,6 +107,7 @@ export function CalculadoraView() {
             onSensibilidadChange={calculadora.setSensibilidadDolar}
             onCargarEjemplo={calculadora.cargarEjemplo}
           />
+          </div>
         </main>
 
         {isDesktop && (
@@ -94,6 +128,7 @@ export function CalculadoraView() {
           />
         )}
       </div>
+      </section>
 
       <Footer />
     </div>

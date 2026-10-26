@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="512" height="512"><rect width="200" height="200" rx="44" fill="#0F1B3D"/><g transform="translate(100,100) scale(0.78) translate(-101,-101)"><g>
+  <clipPath id="gcb4"><circle cx="88" cy="94" r="66"/></clipPath>
+  <path d="M130.4 43.4 A66 66 0 1 0 108 157.5" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+  <g clip-path="url(#gcb4)" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round">
+    <ellipse cx="88" cy="94" rx="29" ry="66"/>
+    <line x1="88" y1="24" x2="88" y2="162"/>
+    <line x1="18" y1="72" x2="150" y2="72"/>
+    <line x1="18" y1="118" x2="150" y2="118"/>
+  </g>
+  <path d="M26 150 C66 186 138 166 168 90 L182 30 L132 54 L146 72 C120 118 74 150 26 150 Z" fill="#3B82F6" stroke="#3B82F6" stroke-width="3" stroke-linejoin="round"/>
+</g></g></svg>

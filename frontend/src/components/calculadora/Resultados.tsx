@@ -244,7 +244,7 @@ export function Resultados({
           <div className="mb-3 rounded-full bg-blue-50 p-4">
             <Calculator size={48} className="text-blue-500" aria-hidden="true" />
           </div>
-          <p>Los resultados aparecerán aquí al completar el formulario</p>
+          <p>Completá los datos de la compra para ver la estimación y comparar opciones.</p>
           {onCargarEjemplo && (
             <Button
               variant="primary"

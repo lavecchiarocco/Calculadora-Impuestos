@@ -8,6 +8,8 @@ interface FormularioPrincipalProps {
   disabled: boolean;
   onBuscarDolar: () => Promise<void>;
   buscandoDolar: boolean;
+  onCalcular: () => Promise<void>;
+  calculando: boolean;
 }
 
 const OPCIONES_TOGGLE = [
@@ -32,6 +34,8 @@ export function FormularioPrincipal({
   disabled,
   onBuscarDolar,
   buscandoDolar,
+  onCalcular,
+  calculando,
 }: FormularioPrincipalProps) {
   const { control, watch, setValue, formState: { errors } } = form;
   const tipoCambio = watch('tipo_cambio_ars_usd');
@@ -41,13 +45,13 @@ export function FormularioPrincipal({
   return (
     <div className="formulario-principal">
       <div className="formulario-header">
-        <h2 className="formulario-title">Cotización del proveedor</h2>
-        <p className="formulario-subtitle">Datos principales de la cotización del proveedor</p>
+        <h2 className="formulario-title">Datos de tu compra</h2>
+        <p className="formulario-subtitle">Completá los datos para estimar el costo de importar.</p>
       </div>
 
       <div className="formulario-body">
         <fieldset className="field-group">
-          <legend className="fieldset-legend">Datos principales</legend>
+          <legend className="fieldset-legend">Compra y envío</legend>
           <div className="grid grid-4">
             <Controller
               control={control}
@@ -55,11 +59,13 @@ export function FormularioPrincipal({
               rules={{ required: 'Ingresá el precio del producto', min: { value: 0.01, message: 'Debe ser mayor a 0' } }}
               render={({ field }) => (
                 <Input
-                  label="Precio FOB"
+                  label="Precio del producto"
+                  hint="Valor de la mercadería, sin envío ni seguro."
                   unit="USD"
                   type="number"
                   step="0.01"
-                  placeholder="0.00"
+                  placeholder="Ej.: 250"
+                  inputMode="decimal"
                   error={errors.precio_producto_usd?.message}
                   disabled={disabled}
                   value={field.value ?? ''}
@@ -75,10 +81,12 @@ export function FormularioPrincipal({
               render={({ field }) => (
                 <Input
                   label="Costo de envío"
+                  hint="Si no tiene costo, dejalo en 0."
                   unit="USD"
                   type="number"
                   step="0.01"
-                  placeholder="0.00"
+                  placeholder="Ej.: 35"
+                  inputMode="decimal"
                   error={errors.costo_envio_usd?.message}
                   disabled={disabled}
                   value={field.value ?? ''}
@@ -93,10 +101,12 @@ export function FormularioPrincipal({
               render={({ field }) => (
                 <Input
                   label="Seguro"
+                  hint="Opcional. Si no lo conocés, dejalo en 0."
                   unit="USD"
                   type="number"
                   step="0.01"
-                  placeholder="0.00"
+                  placeholder="Ej.: 5"
+                  inputMode="decimal"
                   disabled={disabled}
                   value={field.value ?? ''}
                   onChange={(e) => field.onChange(parsearNumeroAR(e.target.value))}
@@ -110,10 +120,11 @@ export function FormularioPrincipal({
               rules={{ required: 'La cantidad es obligatoria', min: { value: 1, message: 'Mínimo 1' } }}
               render={({ field }) => (
                 <Input
-                  label="Cantidad de productos"
+                  label="Cantidad de unidades"
                   type="number"
                   step="1"
                   min="1"
+                  inputMode="numeric"
                   error={errors.cantidad_productos?.message}
                   disabled={disabled}
                   value={field.value ?? ''}
@@ -135,6 +146,7 @@ export function FormularioPrincipal({
                     step="1"
                     min="1"
                     max={cantidadTotal}
+                    inputMode="numeric"
                     error={errors.max_unidades_misma_especie?.message}
                     disabled={disabled}
                     value={field.value ?? ''}
@@ -150,10 +162,11 @@ export function FormularioPrincipal({
         </fieldset>
 
         <fieldset className="field-group">
+          <legend className="fieldset-legend">Tipo de cambio</legend>
           <div className="grid grid-2">
             <div className="field">
-              <label className="field-label flex items-center justify-between">
-                Tipo de cambio (ARS/USD)
+              <label htmlFor="tipo-cambio" className="field-label flex items-center justify-between">
+                Pesos por dólar (ARS/USD)
                 {tipoCambio && !buscandoDolar && (
                   <span className="badge-info text-xs">Actual</span>
                 )}
@@ -166,9 +179,13 @@ export function FormularioPrincipal({
                   render={({ field }) => (
                     <Input
                       type="number"
+                      id="tipo-cambio"
                       step="0.01"
                       min="0.01"
-                      placeholder="0"
+                      placeholder="Ej.: 1000"
+                      inputMode="decimal"
+                      hint="Se usa para expresar el resultado en pesos."
+                      unit="ARS/USD"
                       error={errors.tipo_cambio_ars_usd?.message}
                       disabled={disabled || buscandoDolar}
                       value={field.value ?? ''}
@@ -193,7 +210,6 @@ export function FormularioPrincipal({
                 </button>
               </div>
             </div>
-            <div className="field"></div>
           </div>
           {errors.tipo_cambio_ars_usd && (
             <p className="field-error" role="alert">{errors.tipo_cambio_ars_usd.message}</p>
@@ -359,20 +375,31 @@ export function FormularioPrincipal({
           <Button
             type="button"
             variant="secondary"
-            className="!bg-white !border-slate-300 !text-slate-700 hover:!bg-slate-50 transition-colors"
+            className="calculator-reset-button"
             onClick={() => form.reset(VALORES_DEFECTO)}
             disabled={disabled}
           >
-            Limpiar
+            Reiniciar campos
           </Button>
           <Button
             type="button"
-            variant="primary"
-            className="!bg-blue-600 !text-white hover:!bg-blue-700 transition-colors font-medium"
+            variant="ghost"
+            className="calculator-example-button"
             onClick={() => form.reset(EJEMPLO)}
             disabled={disabled}
           >
             Cargar ejemplo
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            className="calculator-calculate-button"
+            onClick={onCalcular}
+            loading={calculando}
+            disabled={disabled}
+            aria-live="polite"
+          >
+            {calculando ? 'Calculando…' : 'Calcular'}
           </Button>
         </div>
       </div>
