@@ -350,7 +350,7 @@ class TestAdvertenciasElegibilidad:
     def test_mas_de_3_unidades_misma_especie(self):
         """Más de 3 productos de la misma especie → no elegible en pequeños envíos"""
         datos = crear_datos_base(
-            precio_producto_usd=Decimal("500"),
+            precio_producto_usd=Decimal("300"),
             cantidad_productos=5,
             max_unidades_misma_especie=5,
         )
@@ -359,6 +359,19 @@ class TestAdvertenciasElegibilidad:
         pequenos = next(r for r in resultado.regímenes if r.regimen_id == "pequenos_envios")
         assert pequenos.elegibilidad.elegible is False
         assert any("misma especie" in m for m in pequenos.elegibilidad.motivos)
+
+    def test_cuatro_productos_con_unidad_por_especie_son_elegibles(self):
+        """La cantidad total puede superar 3 si ninguna especie supera 3 unidades."""
+        datos = crear_datos_base(
+            precio_producto_usd=Decimal("300"),
+            cantidad_productos=4,
+            max_unidades_misma_especie=1,
+        )
+        resultado = calcular_todos_regimenes(datos)
+
+        pequenos = next(r for r in resultado.regímenes if r.regimen_id == "pequenos_envios")
+        assert pequenos.elegibilidad.elegible is not False
+        assert not any("misma especie" in m for m in pequenos.elegibilidad.motivos)
 
     def test_organismo_externo_pequenos_envios(self):
         """Requiere organismo externo → no elegible en pequeños envíos"""

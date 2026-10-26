@@ -219,7 +219,7 @@ def calcular_pequenos_envios(datos: DatosEntrada, usar_maximo: bool = True) -> R
         motivos_no_elegible.append("Algún bulto supera los 50 kg (límite de los regímenes simplificados)")
 
     # Validación de unidades de la misma especie (máximo 3 productos idénticos)
-    max_iguales = min(datos.max_unidades_misma_especie, datos.cantidad_productos)
+    max_iguales = datos.max_unidades_misma_especie
     if max_iguales > topes.max_unidades_misma_especie:
         motivos_no_elegible.append(
             f"Cantidad de productos idénticos ({max_iguales}) supera el máximo de {topes.max_unidades_misma_especie} "
