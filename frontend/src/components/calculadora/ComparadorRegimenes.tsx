@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { ChevronDown } from 'lucide-react';
 import type { CalculoResponse } from '@/types/api';
 import {
   costoTotalEscenario,
@@ -63,25 +64,25 @@ export function ComparadorRegimenes({ resultado, moneda, sensibilidadDolar }: Co
   const avisos = resultado.advertencias_globales ?? [];
 
   return (
-    <section
-      className="comparador-regimenes bg-white border border-surface-200 rounded-xl shadow-sm p-5"
-      aria-labelledby="comparador-titulo"
-    >
-      <h3 id="comparador-titulo" className="font-semibold text-surface-900">
-        Costo total por régimen
-      </h3>
-      <p className="mt-1 text-body-sm text-surface-600">
-        {ganador && ahorro > 0.5 && siguiente ? (
-          <>
-            <strong className="text-surface-900">{nombreCorto(ganador.nombre)}</strong> es la opción más barata:
-            ahorrás hasta{' '}
-            <strong className="text-surface-900">{formatearMontoCorto(ahorro, moneda)}</strong> frente a{' '}
-            {nombreCorto(siguiente.nombre)} (escenario conservador).
-          </>
-        ) : (
-          'Compará el costo estimado de cada régimen.'
-        )}
-      </p>
+    <section className="comparador-regimenes bg-white border border-surface-200 rounded-xl shadow-sm p-5" aria-labelledby="comparador-titulo">
+      <details open={window.innerWidth >= 768} className="comparador-desplegable">
+        <summary className="comparador-resumen" onClick={(event) => { if (window.innerWidth >= 768) event.preventDefault(); }}>
+          <span className="comparador-resumen-texto">
+            <span id="comparador-titulo" className="comparador-titulo" role="heading" aria-level={3}>
+              Costo total por régimen
+            </span>
+            <span className="comparador-resumen-ayuda">
+              {ganador && ahorro > 0.5 && siguiente ? (
+                <>
+                  <strong className="text-surface-900">{nombreCorto(ganador.nombre)}</strong> es la opción más barata:
+                  ahorrás hasta <strong className="text-surface-900">{formatearMontoCorto(ahorro, moneda)}</strong>.
+                </>
+              ) : 'Compará el costo estimado de cada régimen.'}
+            </span>
+          </span>
+          <ChevronDown className="comparador-chevron" size={20} aria-hidden="true" />
+        </summary>
+        <div className="comparador-contenido">
 
       {avisos.length > 0 && (
         <ul
@@ -131,6 +132,8 @@ export function ComparadorRegimenes({ resultado, moneda, sensibilidadDolar }: Co
         })}
       </ul>
 
+        </div>
+      </details>
     </section>
   );
 }

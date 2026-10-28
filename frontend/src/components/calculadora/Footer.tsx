@@ -141,7 +141,7 @@ export function Footer() {
         aria-label="Enviar un comentario o sugerencia"
       >
         <MessageCircle size={22} aria-hidden="true" />
-        <span>Dejar un mensaje</span>
+        <span>Dejanos tu mensaje</span>
       </button>
 
       {showFeedback && (

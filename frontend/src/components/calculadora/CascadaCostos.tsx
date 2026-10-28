@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import type { CalculoResponse, EscenarioResultado, RegimenResultado } from '@/types/api';
 import { formatearARS, formatearPorcentaje, formatearUSD } from '@/utils/format';
 import {
@@ -81,19 +82,18 @@ export function CascadaCostos({ resultado, moneda, escenario, sensibilidadDolar 
   const elegible = esElegible(regimen);
 
   return (
-    <section
-      className="cascada-costos bg-white border border-surface-200 rounded-xl shadow-sm p-5"
-      aria-labelledby="cascada-titulo"
-    >
+    <section className="cascada-costos bg-white border border-surface-200 rounded-xl shadow-sm p-5" aria-labelledby="cascada-titulo">
+      <details open={window.innerWidth >= 768} className="cascada-desplegable">
+        <summary className="cascada-resumen" aria-controls="cascada-contenido" onClick={(event) => { if (window.innerWidth >= 768) event.preventDefault(); }}>
+          <span>
+            <span id="cascada-titulo" className="cascada-titulo" role="heading" aria-level={3}>Cómo se arma el costo</span>
+            <span className="cascada-resumen-ayuda">Escenario {escenario === 'conservador' ? 'conservador' : 'mínimo'}, de lo que pagás por el producto al total puesto en el país.</span>
+          </span>
+          <ChevronDown className="cascada-chevron" size={20} aria-hidden="true" />
+        </summary>
+        <div id="cascada-contenido" className="cascada-contenido">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 id="cascada-titulo" className="font-semibold text-surface-900">
-            Cómo se arma el costo
-          </h3>
-          <p className="mt-1 text-body-sm text-surface-600">
-            Escenario {escenario === 'conservador' ? 'conservador' : 'mínimo'}, de lo que pagás por el producto al total
-            puesto en el país.
-          </p>
         </div>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Régimen a detallar">
           {regimenes.map((r) => {
@@ -157,7 +157,7 @@ export function CascadaCostos({ resultado, moneda, escenario, sensibilidadDolar 
                       </span>
                     )}
                   </span>
-                  <span className="font-mono text-body-sm tabular-nums text-surface-900">
+                  <span className="cascada-importe font-mono text-body-sm tabular-nums text-surface-900">
                     {fmt(fila.valor)}
                   </span>
                 </li>
@@ -166,7 +166,7 @@ export function CascadaCostos({ resultado, moneda, escenario, sensibilidadDolar 
 
             <li className="mt-2 flex flex-col gap-1 rounded-lg border border-primary-200 bg-primary-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <span className="text-body-sm font-semibold text-surface-900">Costo total puesto en el país</span>
-              <span className="font-mono text-body-sm font-semibold tabular-nums text-surface-900">
+              <span className="cascada-importe cascada-importe-total font-mono text-body-sm font-semibold tabular-nums text-surface-900">
                 {fmt(total)}
               </span>
             </li>
@@ -174,6 +174,8 @@ export function CascadaCostos({ resultado, moneda, escenario, sensibilidadDolar 
 
         </>
       )}
+        </div>
+      </details>
     </section>
   );
 }

@@ -171,7 +171,7 @@ export function FormularioPrincipal({
                   <span className="badge-info text-xs">Actual</span>
                 )}
               </label>
-              <div className="relative">
+              <div className="tipo-cambio-control">
                 <Controller
                   control={control}
                   name="tipo_cambio_ars_usd"
@@ -184,7 +184,6 @@ export function FormularioPrincipal({
                       min="0.01"
                       placeholder="Ej.: 1000"
                       inputMode="decimal"
-                      hint="Se usa para expresar el resultado en pesos."
                       unit="ARS/USD"
                       error={errors.tipo_cambio_ars_usd?.message}
                       disabled={disabled || buscandoDolar}
@@ -200,13 +199,14 @@ export function FormularioPrincipal({
                   className="btn-dolar"
                   onClick={onBuscarDolar}
                   disabled={disabled || buscandoDolar}
-                  aria-label="Buscar dólar oficial"
+                  aria-label="Actualizar valor del dólar oficial"
                 >
                   {buscandoDolar ? (
                     <RefreshCw size={16} className="animate-spin" />
                   ) : (
-                    <ExternalLink size={16} />
+                    <ExternalLink size={16} aria-hidden="true" />
                   )}
+                  <span>{buscandoDolar ? 'Actualizando…' : 'Actualizar dólar'}</span>
                 </button>
               </div>
             </div>

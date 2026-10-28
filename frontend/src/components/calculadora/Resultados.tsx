@@ -1,12 +1,12 @@
-import { useEffect, useId, useRef, useState } from 'react';
-import { Calculator, X, Download } from 'lucide-react';
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { Calculator, X, Download, ChevronDown } from 'lucide-react';
 import type { CalculoResponse, RegimenResultado } from '@/types/api';
 import { formatearUSD, formatearARS, formatearPorcentaje, formatearUSDEntero, formatearARSEntero } from '@/utils/format';
 import { Button } from '@/components/ui';
 import { descargarPDF } from '@/utils/pdf';
 import { ComparadorRegimenes } from './ComparadorRegimenes';
 import { CascadaCostos } from './CascadaCostos';
-import { esElegible } from '@/utils/visual';
+import { costoTotalEscenario, esElegible, formatearMontoCorto, nombreCorto } from '@/utils/visual';
 
 interface ResultadosProps {
   resultado: CalculoResponse | null;
@@ -20,18 +20,45 @@ interface ResultadosProps {
 
 type Escenario = 'conservador' | 'minimo';
 
+function useMobileLayout() {
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches);
+
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+
+  return isMobile;
+}
+
 function RegimenCard({
   regimen,
   esMasBarato,
   moneda,
   escenarioActivo,
   sensibilidadDolar = 0,
+  isMobile,
+  estaAbierto,
+  onAlternar,
+  esMasBaratoMobile,
+  diferenciaMobile,
+  nombreMasBaratoMobile,
+  mobileOrder,
 }: {
   regimen: RegimenResultado;
   esMasBarato: boolean;
   moneda: 'USD' | 'ARS';
   escenarioActivo: Escenario;
   sensibilidadDolar?: number;
+  isMobile: boolean;
+  estaAbierto: boolean;
+  onAlternar: () => void;
+  esMasBaratoMobile: boolean;
+  diferenciaMobile: number;
+  nombreMasBaratoMobile: string;
+  mobileOrder: number;
 }) {
   const [detalleAbierto, setDetalleAbierto] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -60,15 +87,57 @@ function RegimenCard({
     : '—';
 
   return (
-    <article className={`regimen-card bg-white border border-surface-200 rounded-xl shadow-sm ${esMasBarato ? 'ring-2 ring-primary-500' : ''} ${elegible ? '' : 'no-elegible'}`}>
+    <details
+      open={!isMobile || (elegible && estaAbierto)}
+      className={`regimen-card bg-white border border-surface-200 rounded-xl shadow-sm ${esMasBarato ? 'ring-2 ring-primary-500' : ''} ${elegible ? '' : 'no-elegible'}`}
+      style={{ '--mobile-order': mobileOrder } as CSSProperties}
+    >
       {!elegible && <span className="regimen-card-ribbon">No elegible</span>}
-      <header className="regimen-card-header p-5 border-b border-surface-100">
-        <h3 className="font-semibold text-surface-900">{regimen.regimen_nombre}</h3>
-      </header>
+      <summary
+        className="regimen-card-summary"
+        aria-expanded={!isMobile || (elegible && estaAbierto)}
+        aria-disabled={isMobile && !elegible}
+        onClick={(event) => {
+          if (!isMobile || !elegible) {
+            event.preventDefault();
+            return;
+          }
+          onAlternar();
+        }}
+      >
+        <span className="regimen-card-summary-name">
+          <span className="regimen-card-summary-chips">
+            {!elegible && <span className="regimen-card-status-chip">No elegible</span>}
+            {esMasBaratoMobile && <span className="regimen-card-summary-badge">Más barato</span>}
+          </span>
+          <span className="regimen-card-title font-semibold text-surface-900" role="heading" aria-level={3} title={regimen.regimen_nombre}>{regimen.regimen_nombre}</span>
+          {!elegible && (
+            <span className="regimen-card-ineligible-reason" title={regimen.elegibilidad.motivos[0]}>
+              {regimen.elegibilidad.motivos[0] ?? 'No cumple los requisitos de este régimen.'}
+            </span>
+          )}
+        </span>
+        <span className="regimen-card-summary-metrics">
+          <span className="regimen-card-summary-total">
+            <span>Costo total</span>
+            <strong>{costoTotal}</strong>
+          </span>
+          <span className="regimen-card-summary-pct">
+            <span>% sobre CIF</span>
+            <strong>{pctCif}</strong>
+          </span>
+          <ChevronDown className="regimen-card-chevron" size={20} aria-hidden="true" />
+        </span>
+        {elegible && diferenciaMobile > 0.005 && (
+          <span className="regimen-card-difference">
+            +{formatearMontoCorto(diferenciaMobile, moneda)} vs. {nombreCorto(nombreMasBaratoMobile)}
+          </span>
+        )}
+      </summary>
 
       <div className="regimen-card-body p-5">
         <dl className="grid grid-cols-1 gap-3">
-          <div className="regimen-card-metric regimen-card-total min-w-0">
+          <div className="regimen-card-metric min-w-0">
             <dt className="text-caption text-surface-500">Costo total</dt>
             <dd className="w-full max-w-full break-words font-mono tabular-nums text-surface-900 text-base font-semibold">{costoTotal}</dd>
           </div>
@@ -220,7 +289,7 @@ function RegimenCard({
           </div>
         </div>
       </dialog>
-    </article>
+    </details>
   );
 }
 
@@ -232,6 +301,34 @@ export function Resultados({
   sensibilidadDolar,
   onCargarEjemplo,
 }: ResultadosProps) {
+  const isMobile = useMobileLayout();
+  const [mobileAccordion, setMobileAccordion] = useState<{
+    resultado: CalculoResponse | null;
+    regimenId: string | null;
+  } | null>(null);
+
+  const regimenesMobile = useMemo(() => {
+    if (!resultado) return [];
+    const factor = 1 + sensibilidadDolar / 100;
+    return resultado.regímenes
+      .map((regimen, index) => {
+        const preferido = escenario === 'conservador'
+          ? regimen.escenario_conservador
+          : regimen.escenario_minimo;
+        const alternativo = escenario === 'conservador'
+          ? regimen.escenario_minimo
+          : regimen.escenario_conservador;
+        const activo = preferido ?? alternativo;
+        return {
+          regimen,
+          index,
+          elegible: esElegible(regimen),
+          costo: activo ? costoTotalEscenario(activo, moneda, factor) : Number.POSITIVE_INFINITY,
+        };
+      })
+      .sort((a, b) => Number(b.elegible) - Number(a.elegible) || a.costo - b.costo || a.index - b.index);
+  }, [resultado, escenario, moneda, sensibilidadDolar]);
+
   const handleDescargarPDF = () => {
     if (!resultado) return;
     descargarPDF({ resultado, moneda, escenario, sensibilidadDolar });
@@ -260,6 +357,14 @@ export function Resultados({
   }
 
   const masBaratoId = resultado.regimen_mas_barato_elegible;
+  const regimenMasBaratoMobile = regimenesMobile.find((item) => item.elegible);
+  const defaultOpenRegimenId = regimenMasBaratoMobile?.regimen.regimen_id;
+  const openRegimenId = mobileAccordion?.resultado === resultado
+    ? mobileAccordion.regimenId
+    : defaultOpenRegimenId;
+  const costoMasBaratoMobile = regimenMasBaratoMobile?.costo ?? 0;
+  const mobileOrder = new Map(regimenesMobile.map((item, index) => [item.regimen.regimen_id, index]));
+  const mobileMetrics = new Map(regimenesMobile.map((item) => [item.regimen.regimen_id, item]));
   return (
     <div className="resultados animate-step-in w-full">
       <div className="resultados-header mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -299,17 +404,31 @@ export function Resultados({
       </div>
 
       <div className="resultados-body">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4" role="region" aria-label="Detalle por régimen">
-          {resultado.regímenes.map((regimen) => (
-            <RegimenCard
-              key={regimen.regimen_id}
-              regimen={regimen}
-              esMasBarato={regimen.regimen_id === masBaratoId}
-              moneda={moneda}
-              escenarioActivo={escenario}
-              sensibilidadDolar={sensibilidadDolar}
-            />
-          ))}
+        <div className="resultados-regimenes grid grid-cols-1 md:grid-cols-3 gap-4" role="region" aria-label="Detalle por régimen">
+          {resultado.regímenes.map((regimen) => {
+            const mobileInfo = mobileMetrics.get(regimen.regimen_id);
+            const elegible = esElegible(regimen);
+            return (
+              <RegimenCard
+                key={regimen.regimen_id}
+                regimen={regimen}
+                esMasBarato={regimen.regimen_id === masBaratoId}
+                moneda={moneda}
+                escenarioActivo={escenario}
+                sensibilidadDolar={sensibilidadDolar}
+                isMobile={isMobile}
+                estaAbierto={elegible && openRegimenId === regimen.regimen_id}
+                onAlternar={() => setMobileAccordion({
+                  resultado,
+                  regimenId: openRegimenId === regimen.regimen_id ? null : regimen.regimen_id,
+                })}
+                esMasBaratoMobile={regimenMasBaratoMobile?.regimen.regimen_id === regimen.regimen_id}
+                diferenciaMobile={elegible ? Math.max(0, (mobileInfo?.costo ?? 0) - costoMasBaratoMobile) : 0}
+                nombreMasBaratoMobile={regimenMasBaratoMobile?.regimen.regimen_nombre ?? ''}
+                mobileOrder={mobileOrder.get(regimen.regimen_id) ?? 0}
+              />
+            );
+          })}
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-4">
